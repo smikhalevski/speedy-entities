@@ -1,4 +1,18 @@
-import {createDecoder} from './createDecoder';
-import {lookupHtmlEntity} from './lookupHtmlEntity';
+import entitiesData from './gen/entities.json';
+import legacyEntitiesData from './gen/legacy-entities.json';
+import {createEntityDecoder} from './createEntityDecoder';
+import {createEntityManager} from './createEntityManager';
+import {unpackMap} from './unpackMap';
 
-export const decodeHtml = createDecoder(lookupHtmlEntity);
+/**
+ * An entity manager that can search for HTML entities.
+ */
+export const htmlEntityManager = createEntityManager();
+
+htmlEntityManager.setAll(unpackMap(entitiesData));
+htmlEntityManager.setAll(unpackMap(legacyEntitiesData), true);
+
+/**
+ * Decodes HTML entities in a string.
+ */
+export const decodeHtml = createEntityDecoder(htmlEntityManager);

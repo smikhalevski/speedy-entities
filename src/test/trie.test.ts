@@ -1,17 +1,17 @@
-import {addToTrie, createTrie, ITrie, lookupInTrie} from '../main/trie';
+import {setTrie, createTrie, ITrie, searchTrie} from '../main/trie';
 
-const A = 'a';//97;
-const B = 'b';//98;
-const C = 'c';//99;
-const D = 'd';//100;
-const E = 'e';//101;
-const F = 'f';//102;
+const A = 97;
+const B = 98;
+const C = 99;
+const D = 100;
+const E = 101;
+const F = 102;
 
-describe('addToTrie', () => {
+describe('setTrie', () => {
 
   test('adds an empty string to a trie', () => {
     const trie = createTrie();
-    addToTrie(trie, '', 123);
+    setTrie(trie, '', 123);
 
     expect(trie).toEqual(<ITrie<number>>{
       chars: null,
@@ -24,7 +24,7 @@ describe('addToTrie', () => {
 
   test('adds value to an empty trie', () => {
     const trie = createTrie();
-    addToTrie(trie, 'abc', 123);
+    setTrie(trie, 'abc', 123);
 
     expect(trie).toEqual(<ITrie<number>>{
       chars: [A, B, C],
@@ -37,8 +37,8 @@ describe('addToTrie', () => {
 
   test('adds value to an non-empty trie', () => {
     const trie = createTrie();
-    addToTrie(trie, 'abc', 123);
-    addToTrie(trie, 'ade', 456);
+    setTrie(trie, 'abc', 123);
+    setTrie(trie, 'ade', 456);
 
     expect(trie).toEqual(<ITrie<number>>{
       chars: null,
@@ -74,9 +74,9 @@ describe('addToTrie', () => {
 
   test('adds value to a deep trie', () => {
     const trie = createTrie();
-    addToTrie(trie, 'abc', 123);
-    addToTrie(trie, 'ade', 456);
-    addToTrie(trie, 'abf', 789);
+    setTrie(trie, 'abc', 123);
+    setTrie(trie, 'ade', 456);
+    setTrie(trie, 'abf', 789);
 
     expect(trie).toEqual(<ITrie<number>>{
       chars: null,
@@ -127,8 +127,8 @@ describe('addToTrie', () => {
 
   test('preserves overlapping keys', () => {
     const trie = createTrie();
-    addToTrie(trie, 'abc', 123);
-    addToTrie(trie, 'abcdef', 456);
+    setTrie(trie, 'abc', 123);
+    setTrie(trie, 'abcdef', 456);
 
     expect(trie).toEqual(<ITrie<number>>{
       charCount: 0,
@@ -173,71 +173,71 @@ describe('addToTrie', () => {
 
 });
 
-describe('lookupInTrie', () => {
+describe('searchTrie', () => {
 
   test('finds a tire with one entry', () => {
     const trie = createTrie();
-    addToTrie(trie, 'abc', 123);
+    setTrie(trie, 'abc', 123);
 
-    expect(lookupInTrie(trie, 'abc', 0)).toBe(trie);
+    expect(searchTrie(trie, 'abc', 0)).toBe(trie);
   });
 
   test('finds a tire with two leaf entries', () => {
     const trie = createTrie();
-    addToTrie(trie, 'abc', 123);
-    addToTrie(trie, 'abd', 456);
+    setTrie(trie, 'abc', 123);
+    setTrie(trie, 'abd', 456);
 
-    const leafTrie = lookupInTrie(trie, 'abd', 0);
+    const leafTrie = searchTrie(trie, 'abd', 0);
 
     expect(leafTrie).toBe(trie.children?.[A].children?.[B].children?.[D]);
   });
 
   test('finds a tire with deep char entries', () => {
     const trie = createTrie();
-    addToTrie(trie, 'abc', 123);
-    addToTrie(trie, 'abdef', 456);
+    setTrie(trie, 'abc', 123);
+    setTrie(trie, 'abdef', 456);
 
-    const leafTrie = lookupInTrie(trie, 'abdef', 0);
+    const leafTrie = searchTrie(trie, 'abdef', 0);
 
     expect(leafTrie).toBe(trie.children?.[A].children?.[B].children?.[D]);
   });
 
   test('finds a tire at offset', () => {
     const trie = createTrie();
-    addToTrie(trie, 'abc', 123);
-    addToTrie(trie, 'abdef', 456);
+    setTrie(trie, 'abc', 123);
+    setTrie(trie, 'abdef', 456);
 
-    const leafTrie = lookupInTrie(trie, 'qqqabdef', 3);
+    const leafTrie = searchTrie(trie, 'qqqabdef', 3);
 
     expect(leafTrie).toBe(trie.children?.[A].children?.[B].children?.[D]);
   });
 
   test('finds the longest tire', () => {
     const trie = createTrie();
-    addToTrie(trie, 'abc', 123);
-    addToTrie(trie, 'abcdef', 456);
+    setTrie(trie, 'abc', 123);
+    setTrie(trie, 'abcdef', 456);
 
-    const leafTrie = lookupInTrie(trie, 'abcdef', 0);
+    const leafTrie = searchTrie(trie, 'abcdef', 0);
 
     expect(leafTrie).toBe(trie.children?.[A].children?.[B].children?.[C].children?.[D]);
   });
 
   test('finds the shortest tire on mismatch', () => {
     const trie = createTrie();
-    addToTrie(trie, 'abc', 123);
-    addToTrie(trie, 'abcdef', 456);
+    setTrie(trie, 'abc', 123);
+    setTrie(trie, 'abcdef', 456);
 
-    const leafTrie = lookupInTrie(trie, 'abcdeZZZ', 0);
+    const leafTrie = searchTrie(trie, 'abcdeZZZ', 0);
 
     expect(leafTrie).toBe(trie.children?.[A].children?.[B].children?.[C]);
   });
 
   test('finds the shortest tire on string end', () => {
     const trie = createTrie();
-    addToTrie(trie, 'abc', 123);
-    addToTrie(trie, 'abcdef', 456);
+    setTrie(trie, 'abc', 123);
+    setTrie(trie, 'abcdef', 456);
 
-    const leafTrie = lookupInTrie(trie, 'abcde', 0);
+    const leafTrie = searchTrie(trie, 'abcde', 0);
 
     expect(leafTrie).toBe(trie.children?.[A].children?.[B].children?.[C]);
   });

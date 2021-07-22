@@ -5,44 +5,36 @@ const bench = require('nodemark');
 const chalk = require('chalk');
 
 function test(label, cb, timeout) {
-  // global.gc();
+  global.gc();
   process.stdout.write(label);
   readline.cursorTo(process.stdout, 0, null);
   const result = bench(cb, null, timeout);
   console.log(label + result);
 }
 
-const xmlTerminatedKnownNamedEntities = '&amp;&lt;&gt;';
-const xmlTerminatedUnknownNamedEntities = '&NotNestedGreaterGreater;';
+const samples = [
+  '&#X61;&#x62;&#x63;', // terminated hex
+  '&#X61&#x62&#x63', // unterminated hex
+  '&#97;&#98;&#99;', // terminated decimal
+  '&#97&#98&#99', // unterminated decimal
+  '&amp;&lt;&gt;', // terminated XML/legacy
+  '&amp&lt&gt', // unterminated XML/legacy
+  '&NotNestedGreaterGreater;&PrecedesSlantEqual;', // terminated non-legacy HTML
+  '&NotNestedGreaterGreater&PrecedesSlantEqual', // unterminated non-legacy HTML
+];
 
-const unterminatedKnownNamedEntities = '&amp&lt&gt';
-const mixedHtmlEntities = '&amp&NotNestedGreaterGreater;&gt';
+console.log(chalk.bold.inverse(' XML benchmark '));
 
-console.log(chalk.bold('XML benchmark'));
+samples.map((sample) => {
+  console.log('\n"' + chalk.bold(sample) + '"');
+  test('  decodeXml           ', () => decodeXml(sample), 3000);
+  test('  entities.decodeXML  ', () => decodeXML(sample), 3000);
+});
 
-console.log('\nTerminated known named entities');
-test('  decodeXml          ', () => decodeXml(xmlTerminatedKnownNamedEntities), 3000);
-test('  entities.decodeXML ', () => decodeXML(xmlTerminatedKnownNamedEntities), 3000);
+console.log('\n\n' + chalk.bold.inverse(' HTML benchmark '));
 
-console.log('\nTerminated unknown named entities');
-test('  decodeXml          ', () => decodeXml(xmlTerminatedUnknownNamedEntities), 3000);
-test('  entities.decodeXML ', () => decodeXML(xmlTerminatedUnknownNamedEntities), 3000);
-
-console.log('\nUnterminated known named entities');
-test('  decodeXml          ', () => decodeXml(unterminatedKnownNamedEntities), 3000);
-test('  entities.decodeXML ', () => decodeXML(unterminatedKnownNamedEntities), 3000);
-
-
-console.log(chalk.bold('\n\nHTML benchmark'));
-
-console.log('\nTerminated known named entities');
-test('  decodeHtml         ', () => decodeHtml(xmlTerminatedKnownNamedEntities), 3000);
-test('  entities.decodeHTML', () => decodeHTML(xmlTerminatedKnownNamedEntities), 3000);
-
-console.log('\nUnterminated known named entities');
-test('  decodeHtml         ', () => decodeHtml(unterminatedKnownNamedEntities), 3000);
-test('  entities.decodeHTML', () => decodeHTML(unterminatedKnownNamedEntities), 3000);
-
-console.log('\nMixed terminated and unterminated known entities');
-test('  decodeHtml          ', () => decodeHtml(mixedHtmlEntities), 3000);
-test('  entities.decodeHTML ', () => decodeHTML(mixedHtmlEntities), 3000);
+samples.map((sample) => {
+  console.log('\n"' + chalk.bold(sample) + '"');
+  test('  decodeHtml           ', () => decodeHtml(sample), 3000);
+  test('  entities.decodeHTML  ', () => decodeHTML(sample), 3000);
+});

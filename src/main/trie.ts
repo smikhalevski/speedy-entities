@@ -1,11 +1,36 @@
 export interface ITrie<T> {
-  chars: Array<string> | null;
-  children: Record<string, ITrie<T>> | null;
+
+  /**
+   * Remaining chars that the word at this trie node contains.
+   */
+  chars: Array<number> | null;
+
+  /**
+   * Char code to trie nodes map.
+   */
+  children: Record<number, ITrie<T>> | null;
+
+  /**
+   * The value held by this node.
+   */
   value: T | undefined;
+
+  /**
+   * The total number of chars in the word described by this trie node, including {@link chars}.
+   */
   charCount: number;
+
+  /**
+   * `true` if this node is a leaf node and {@link value} contains an actual value that was set.
+   */
   end: boolean;
 }
 
+/**
+ * Creates a compressed trie node.
+ *
+ * @see {@link https://en.wikipedia.org/wiki/Trie Trie on Wikipedia}
+ */
 export function createTrie<T>(): ITrie<T> {
   return {
     chars: null,
@@ -16,36 +41,44 @@ export function createTrie<T>(): ITrie<T> {
   };
 }
 
-export function addToTrie<T>(trie: ITrie<T>, key: string, value: T): void {
+/**
+ * Sets a new key-value pair to the trie.
+ */
+export function setTrie<T>(trie: ITrie<T>, key: string, value: T): void {
 
   let i = 0;
   while (i < key.length) {
 
-    if (trie.chars) {
-      const leafTrie = createTrie<T>();
-      trie.children = {[trie.chars[0]]: leafTrie};
+    const chars = trie.chars;
 
-      if (trie.chars.length > 1) {
-        leafTrie.chars = trie.chars.slice(1);
+    if (chars) {
+      const leafTrie = createTrie<T>();
+      trie.children = {[chars[0]]: leafTrie};
+
+      if (chars.length > 1) {
+        leafTrie.chars = chars.slice(1);
       }
 
       leafTrie.charCount = trie.charCount;
       leafTrie.value = trie.value;
       leafTrie.end = true;
-      trie.charCount -= trie.chars.length;
+
+      trie.charCount -= chars.length;
       trie.chars = null;
       trie.value = undefined;
       trie.end = false;
     }
 
-    if (!trie.end && !trie.children) {
+    let children = trie.children;
+
+    if (!trie.end && children === null) {
       break;
     }
 
-    trie.children ||= {};
+    children = trie.children ||= {};
 
-    const charCode = key.charAt(i);
-    const childTrie = trie.children[charCode];
+    const charCode = key.charCodeAt(i);
+    const childTrie = children[charCode];
 
     ++i;
 
@@ -55,7 +88,7 @@ export function addToTrie<T>(trie: ITrie<T>, key: string, value: T): void {
     }
 
     const leafTrie = createTrie<T>();
-    trie.children[charCode] = leafTrie;
+    children[charCode] = leafTrie;
     leafTrie.charCount = trie.charCount + 1;
     trie = leafTrie;
     break;
@@ -64,7 +97,7 @@ export function addToTrie<T>(trie: ITrie<T>, key: string, value: T): void {
   if (i !== key.length) {
     trie.chars = [];
     while (i < key.length) {
-      trie.chars.push(key.charAt(i));
+      trie.chars.push(key.charCodeAt(i));
       ++i;
     }
   }
@@ -73,42 +106,52 @@ export function addToTrie<T>(trie: ITrie<T>, key: string, value: T): void {
   trie.end = true;
 }
 
-export function lookupInTrie<T>(trie: ITrie<T>, str: string, offset: number): ITrie<T> | undefined {
+/**
+ * Searches for a leaf trie node that describes the longest substring from `str` starting from `offset`.
+ *
+ * @param trie The trie with searched keys.
+ * @param input The string to search for the key from the `trie`.
+ * @param offset The offset in `str` to start reading substring from.
+ * @returns A trie node or `undefined` if there's no matching key in the `trie`.
+ */
+export function searchTrie<T>(trie: ITrie<T>, input: string, offset: number): ITrie<T> | undefined {
 
-  const charCount = str.length;
+  const charCount = input.length;
 
   let lastTrie: ITrie<T> | undefined;
 
   forChars: for (let i = offset; i < charCount; ++i) {
 
-    if (trie.chars) {
-      if (i + trie.chars.length > charCount) {
+    const {chars, children} = trie;
+    if (chars !== null) {
+      const length = chars.length;
+
+      if (i + length > charCount) {
         break;
       }
-      for (let j = 0; j < trie.chars.length; ++i, ++j) {
-        if (str.charAt(i) !== trie.chars[j]) {
+      for (let j = 0; j < length; ++i, ++j) {
+        if (input.charCodeAt(i) !== chars[j]) {
           break forChars;
         }
       }
       lastTrie = trie;
       break;
     }
-
     if (trie.end) {
       lastTrie = trie;
     }
-
-    if (trie.children) {
-      trie = trie.children[str.charAt(i)];
-
-      if (trie) {
-        if (trie.end && !trie.chars) {
-          lastTrie = trie;
-        }
-        continue;
-      }
+    if (children === null) {
+      break;
     }
 
+    trie = children[input.charCodeAt(i)];
+
+    if (trie) {
+      if (trie.end && trie.chars === null) {
+        lastTrie = trie;
+      }
+      continue;
+    }
     break;
   }
 

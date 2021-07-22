@@ -10,15 +10,10 @@ fs.mkdirSync(genDir, {recursive: true});
 
 const encodeValue = (str) => str.split('').reduce((code, char, i) => code + char.charCodeAt(0) * 0xffff ** i, 0).toString(36);
 
-let entitiesSrc = '';
+const stringifyEntries = (entries) => JSON.stringify(entries.map(([key, value]) => key + ' ' + encodeValue(value)).join(' '));
 
-entitiesSrc += Object.entries(entities).reduce((src, [key, value]) => src + key + (key in legacyEntities ? ',' : ';') + encodeValue(value) + ' ', '');
+fs.writeFileSync(path.join(genDir, 'entities.json'), stringifyEntries(Object.entries(entities).filter(([key]) => !(key in legacyEntities))));
 
-entitiesSrc += Object.entries(legacyEntities).reduce((src, [key, value]) => key in entities ? src : src + key + ',' + encodeValue(value) + ' ', '');
+fs.writeFileSync(path.join(genDir, 'legacy-entities.json'), stringifyEntries(Object.entries(legacyEntities)));
 
-fs.writeFileSync(path.join(genDir, 'entities.json'), JSON.stringify(entitiesSrc.trim()));
-
-
-const overridesSrc = Object.entries(overrides).reduce((src, [key, value]) => src + key + ';' + encodeValue(value) + ' ', '');
-
-fs.writeFileSync(path.join(genDir, 'overrides.json'), JSON.stringify(overridesSrc.trim()));
+fs.writeFileSync(path.join(genDir, 'overrides.json'), stringifyEntries(Object.entries(overrides)));

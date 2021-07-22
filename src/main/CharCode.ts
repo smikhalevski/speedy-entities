@@ -5,8 +5,6 @@ export const enum CharCode {
   'X' = 88,
   'a' = 97,
   'f' = 102,
-  'z' = 122,
   'A' = 65,
   'F' = 70,
-  'Z' = 90,
 }

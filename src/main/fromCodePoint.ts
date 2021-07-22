@@ -1,17 +1,15 @@
 import illegalCodePoints from './data/illegal-code-points.json';
-import overridesSrc from './gen/overrides.json';
-import {decodeMap} from './decodeMap';
-import {die} from './utils';
+import overridesData from './gen/overrides.json';
+import {unpackMap} from './unpackMap';
+import {die, fromCharCode} from './misc';
 
-const overrides = decodeMap(overridesSrc, ';');
-
-export const fromCharCode = String.fromCharCode;
+const overridesMap = unpackMap(overridesData);
 
 /**
  * @see https://github.com/mathiasbynens/he/blob/master/data/decode-map-overrides.json
  * @see https://github.com/mathiasbynens/he/blob/master/data/invalid-character-reference-code-points.json
  */
-export function fromCodePoint(codePoint: number, strict?: boolean, replacementChar?: string) {
+export function fromCodePoint(codePoint: number, replacementChar?: string, strict?: boolean) {
   replacementChar ||= '\ufffd';
 
   if (codePoint >= 0xd800 && codePoint <= 0xdfff || codePoint > 0x10ffff) {
@@ -20,7 +18,7 @@ export function fromCodePoint(codePoint: number, strict?: boolean, replacementCh
     }
     return replacementChar;
   }
-  const overrideChar = overrides[codePoint];
+  const overrideChar = overridesMap[codePoint];
   if (overrideChar != null) {
     if (strict) {
       die('Disallowed character reference');

@@ -1,4 +1,20 @@
-import {createDecoder} from './createDecoder';
-import {lookupXmlEntity} from './lookupXmlEntity';
+import {createEntityDecoder} from './createEntityDecoder';
+import {createEntityManager} from './createEntityManager';
 
-export const decodeXml = createDecoder(lookupXmlEntity);
+/**
+ * An entity manager that can search for basic XML entities.
+ */
+export const xmlEntityManager = createEntityManager();
+
+xmlEntityManager.setAll({
+  amp: '&',
+  apos: '\'',
+  gt: '>',
+  lt: '<',
+  quot: '"',
+});
+
+/**
+ * Decodes XML entities in a string.
+ */
+export const decodeXml = createEntityDecoder(xmlEntityManager, {numericCharacterReferenceTerminated: true});
