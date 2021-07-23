@@ -70,7 +70,7 @@ describe('decodeHtml', () => {
     expect(decodeHtml('&#97&#98&#99')).toBe('abc');
     expect(decodeHtml('&amp;&lt;&gt;')).toBe('&<>');
     expect(decodeHtml('&amp&lt&gt')).toBe('&<>');
-    expect(decodeHtml('&NotNestedGreaterGreater;&PrecedesSlantEqual;')).toBe('\u2AA2\u0338\u227C');
-    expect(decodeHtml('&NotNestedGreaterGreater&PrecedesSlantEqual')).toBe('&NotNestedGreaterGreater&PrecedesSlantEqual');
+    expect(decodeHtml('&NotNestedGreaterGreater;')).toBe('\u2AA2\u0338');
+    expect(decodeHtml('&NotNestedGreaterGreater')).toBe('&NotNestedGreaterGreater');
   });
 });

@@ -2,7 +2,7 @@ import {createEntityDecoder} from './createEntityDecoder';
 import {createEntityManager} from './createEntityManager';
 
 /**
- * An entity manager that can search for basic XML entities.
+ * An entity manager that supports XML entities.
  */
 export const xmlEntityManager = createEntityManager();
 

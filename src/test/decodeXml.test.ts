@@ -61,7 +61,7 @@ describe('decodeXml', () => {
     expect(decodeXml('&#97&#98&#99')).toBe('&#97&#98&#99');
     expect(decodeXml('&amp;&lt;&gt;')).toBe('&<>');
     expect(decodeXml('&amp&lt&gt')).toBe('&amp&lt&gt');
-    expect(decodeXml('&NotNestedGreaterGreater;&PrecedesSlantEqual;')).toBe('&NotNestedGreaterGreater;&PrecedesSlantEqual;');
-    expect(decodeXml('&NotNestedGreaterGreater&PrecedesSlantEqual')).toBe('&NotNestedGreaterGreater&PrecedesSlantEqual');
+    expect(decodeXml('&NotNestedGreaterGreater;')).toBe('&NotNestedGreaterGreater;');
+    expect(decodeXml('&NotNestedGreaterGreater')).toBe('&NotNestedGreaterGreater');
   });
 });

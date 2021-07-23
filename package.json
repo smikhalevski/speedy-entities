@@ -1,7 +1,7 @@
 {
-  "name": "entities",
+  "name": "speedy-entities",
   "version": "1.0.0",
-  "description": "The XML/HTML entities decoder.",
+  "description": "The fastest XML/HTML entities decoder.",
   "main": "./lib/index-cjs.js",
   "module": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -13,20 +13,28 @@
     "encode-data": "node encode-data.js",
     "rollup": "rollup --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-json",
     "terser": "terser --compress --mangle toplevel --output ./lib/index-cjs.js -- ./lib/index-cjs.js",
-    "clean": "rm -rf ./src/main/gen ./lib",
+    "clean": "rm -rf ./src/main/gen ./lib ./docs",
     "test": "jest --detectOpenHandles",
-    "perf": "[ -d ./lib ] || npm run build; node --expose-gc --max-old-space-size=4096 ./src/test/perf.js"
+    "perf": "[ -d ./lib ] || npm run build; node --expose-gc --max-old-space-size=4096 ./src/test/perf.js",
+    "docs": "typedoc ./src/main/index.ts",
+    "publish-docs": "set -ex; [ -d ./docs ]; [[ ! $(git status --porcelain) ]]; branch=$(git rev-parse --abbrev-ref HEAD); sha=$(git rev-parse --short HEAD); t=$(mktemp -d); cp -R ./docs/ $t; git checkout ghpages; ls -A | grep -wv .git | xargs rm -rf; cp -R $t/ .; git add .; git commit -m \"Updated docs ($sha)\"; git push; git checkout $branch",
+    "release-docs": "set -e; npm run clean; npm run encode-data; npm run docs; npm run publish-docs"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/smikhalevski/entities.git"
+    "url": "git+https://github.com/smikhalevski/speedy-entities.git"
   },
+  "keywords": [
+    "entities",
+    "html-entities",
+    "decoder"
+  ],
   "author": "Savva Mikhalevski <smikhalevski@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/smikhalevski/entities/issues"
+    "url": "https://github.com/smikhalevski/speedy-entities/issues"
   },
-  "homepage": "https://github.com/smikhalevski/entities#readme",
+  "homepage": "https://github.com/smikhalevski/speedy-entities#readme",
   "jest": {
     "preset": "ts-jest"
   },
@@ -42,6 +50,7 @@
     "rollup": "^2.50.5",
     "terser": "^5.7.0",
     "ts-jest": "^27.0.2",
+    "typedoc": "^0.21.4",
     "typescript": "4.2.4"
   },
   "dependencies": {

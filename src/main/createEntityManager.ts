@@ -28,15 +28,17 @@ export interface IEntityManager {
   /**
    * Searches an entity name in the `input` string staring from `offset`.
    *
+   * ```ts
+   * const entityManager = createEntityManager();
+   *
+   * entityManager.set('foo', 'bar');
+   *
+   * entityManager.search('__foo__', 2);
+   * // → {key: "foo", value: "bar", legacy: false}
+   * ```
+   *
    * @param input The string to search entity names in.
    * @param offset The offset in the `input` to start searching from.
-   *
-   * @example
-   * const manager = createEntityManager();
-   * manager.set('foo', 'bar');
-   *
-   * manager.search('__foo__', 2);
-   * // → {key: "foo", value: "bar", legacy: false}
    */
   search(input: string, offset: number): IEntity | undefined;
 }

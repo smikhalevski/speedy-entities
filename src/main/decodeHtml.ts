@@ -5,7 +5,7 @@ import {createEntityManager} from './createEntityManager';
 import {unpackMap} from './unpackMap';
 
 /**
- * An entity manager that can search for HTML entities.
+ * An entity manager that supports HTML entities.
  */
 export const htmlEntityManager = createEntityManager();
 
