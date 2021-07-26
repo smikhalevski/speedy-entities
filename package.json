@@ -16,7 +16,7 @@
     "clean": "rm -rf ./src/main/gen ./lib ./docs",
     "test": "jest --detectOpenHandles",
     "perf": "[ -d ./lib ] || npm run build; node --expose-gc --max-old-space-size=4096 ./src/test/perf.js",
-    "docs": "typedoc ./src/main/index.ts",
+    "docs": "typedoc ./src/main/full.ts",
     "publish-docs": "set -ex; [ -d ./docs ]; [[ ! $(git status --porcelain) ]]; branch=$(git rev-parse --abbrev-ref HEAD); sha=$(git rev-parse --short HEAD); t=$(mktemp -d); cp -R ./docs/ $t; git checkout ghpages; ls -A | grep -wv .git | xargs rm -rf; cp -R $t/ .; git add .; git commit -m \"Updated docs ($sha)\"; git push; git checkout $branch",
     "release-docs": "set -e; npm run clean; npm run encode-data; npm run docs; npm run publish-docs"
   },
@@ -41,6 +41,8 @@
   "devDependencies": {
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^13.0.0",
+    "@smikhalevski/perf-test": "^1.0.0",
+    "@smikhalevski/trie": "^1.0.0",
     "@types/jest": "^26.0.23",
     "chalk": "^4.1.1",
     "entities": "^2.2.0",

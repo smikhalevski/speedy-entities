@@ -1,4 +1,5 @@
-/src/main/gen
+/src/main/gen/
+/docs/
 /lib/
 *.tgz
 
