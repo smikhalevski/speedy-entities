@@ -1,18 +1,9 @@
+const {test} = require('@smikhalevski/perf-test');
 const {decodeXML, decodeHTML} = require('entities');
-const {decodeXml, decodeHtml} = require('../../lib/index-cjs');
-const readline = require('readline');
-const bench = require('nodemark');
+const {decodeXml, decodeHtml} = require('../../lib/full-cjs');
 const chalk = require('chalk');
 
-function test(label, cb, timeout) {
-  global.gc();
-  process.stdout.write(label + '…');
-  readline.cursorTo(process.stdout, 0, null);
-  const result = bench(cb, null, timeout);
-  console.log(label + result);
-}
-
-const samples = [
+const values = [
   '&#X61;&#x62;&#x63;', // terminated hex
   '&#X61&#x62&#x63', // unterminated hex
   '&#97;&#98;&#99;', // terminated decimal
@@ -25,16 +16,16 @@ const samples = [
 
 console.log(chalk.bold.inverse(' XML benchmark '));
 
-samples.map((sample) => {
-  console.log('\n"' + chalk.bold(sample) + '"');
-  test('  speedy-entities  ', () => decodeXml(sample), 3000);
-  test('  fb55/entities    ', () => decodeXML(sample), 3000);
+values.map((value) => {
+  console.log('\n"' + chalk.bold(value) + '"');
+  test('  speedy-entities  ', () => decodeXml(value));
+  test('  fb55/entities    ', () => decodeXML(value));
 });
 
 console.log('\n\n' + chalk.bold.inverse(' HTML benchmark '));
 
-samples.map((sample) => {
-  console.log('\n"' + chalk.bold(sample) + '"');
-  test('  speedy-entities  ', () => decodeHtml(sample), 3000);
-  test('  fb55/entities    ', () => decodeHTML(sample), 3000);
+values.map((value) => {
+  console.log('\n"' + chalk.bold(value) + '"');
+  test('  speedy-entities  ', () => decodeHtml(value));
+  test('  fb55/entities    ', () => decodeHTML(value));
 });

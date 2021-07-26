@@ -1,4 +1,4 @@
-import {createTrie, searchTrie, setTrie} from './trie';
+import {createTrieNode, searchTrie, setTrie} from '@smikhalevski/trie';
 
 export interface IEntity {
   name: string,
@@ -48,9 +48,9 @@ export interface IEntityManager {
  */
 export function createEntityManager(): IEntityManager {
 
-  const trie = createTrie<IEntity>();
+  const rootNode = createTrieNode<IEntity>();
 
-  const set = (name: string, value: string, legacy = false): void => setTrie(trie, name, {name, value, legacy});
+  const set = (name: string, value: string, legacy = false): void => setTrie(rootNode, name, {name, value, legacy});
 
   const setAll = (entities: Record<string, string>, legacy = false): void => {
     for (const [name, value] of Object.entries(entities)) {
@@ -58,7 +58,7 @@ export function createEntityManager(): IEntityManager {
     }
   };
 
-  const search = (input: string, offset: number) => searchTrie(trie, input, offset)?.value;
+  const search = (input: string, offset: number) => searchTrie(rootNode, input, offset)?.value;
 
   return {
     set,
