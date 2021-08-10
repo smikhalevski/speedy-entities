@@ -68,14 +68,54 @@
 					<h1>Usage</h1>
 				</a>
 				<p>⚠️ <a href="https://smikhalevski.github.io/speedy-entities/">API documentation is available here.</a></p>
+				<a href="#preconfigured-decoders" id="preconfigured-decoders" style="color: inherit; text-decoration: none;">
+					<h2>Preconfigured decoders</h2>
+				</a>
 				<p>There are two preconfigured decoders: <code>decodeXml</code> and <code>decodeHtml</code>.</p>
 				<pre><code class="language-ts"><span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">decodeXml</span><span style="color: #000000">, </span><span style="color: #001080">decodeHtml</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;speedy-entities&#039;</span><span style="color: #000000">;</span>
 
-<span style="color: #795E26">decodeXml</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;#X61;&amp;#98;&amp;lt&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;ab&amp;lt&quot;</span>
-
-<span style="color: #795E26">decodeHtml</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;ltfoo&amp;NotNestedGreaterGreater;&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;&lt;foo\u2AA2\u0338&quot;</span>
+<span style="color: #795E26">decodeXml</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;#X61;&amp;#98;&amp;lt;&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;ab&amp;lt&quot;</span>
+<span style="color: #795E26">decodeHtml</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;ltfoo&amp;AElig&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;&lt;foo\u00c6&quot;</span>
 </code></pre>
-				<p>You can create a custom decoder that would support custom entities.</p>
+				<p>By default, <code>decodeHtml</code> supports only legacy HTML entities. This allowed to reduce the bundle size to just
+				<a href="https://bundlephobia.com/package/speedy-entities">2.3 kB gzipped</a>.</p>
+				<details>
+					<summary>The list of legacy HTML entities</summary>
+					<p>
+						<blockquote>
+							<p><code>aacute</code>, <code>Aacute</code>, <code>acirc</code>, <code>Acirc</code>, <code>acute</code>, <code>aelig</code>, <code>AElig</code>, <code>agrave</code>, <code>Agrave</code>, <code>amp</code>, <code>AMP</code>, <code>aring</code>, <code>Aring</code>,
+								<code>atilde</code>, <code>Atilde</code>, <code>auml</code>, <code>Auml</code>, <code>brvbar</code>, <code>ccedil</code>, <code>Ccedil</code>, <code>cedil</code>, <code>cent</code>, <code>copy</code>, <code>COPY</code>, <code>curren</code>, <code>deg</code>,
+								<code>divide</code>, <code>eacute</code>, <code>Eacute</code>, <code>ecirc</code>, <code>Ecirc</code>, <code>egrave</code>, <code>Egrave</code>, <code>eth</code>, <code>ETH</code>, <code>euml</code>, <code>Euml</code>, <code>frac12</code>, <code>frac14</code>,
+								<code>frac34</code>, <code>gt</code>, <code>GT</code>, <code>iacute</code>, <code>Iacute</code>, <code>icirc</code>, <code>Icirc</code>, <code>iexcl</code>, <code>igrave</code>, <code>Igrave</code>, <code>iquest</code>, <code>iuml</code>, <code>Iuml</code>,
+								<code>laquo</code>, <code>lt</code>, <code>LT</code>, <code>macr</code>, <code>micro</code>, <code>middot</code>, <code>nbsp</code>, <code>not</code>, <code>ntilde</code>, <code>Ntilde</code>, <code>oacute</code>, <code>Oacute</code>, <code>ocirc</code>,
+								<code>Ocirc</code>, <code>ograve</code>, <code>Ograve</code>, <code>ordf</code>, <code>ordm</code>, <code>oslash</code>, <code>Oslash</code>, <code>otilde</code>, <code>Otilde</code>, <code>ouml</code>, <code>Ouml</code>, <code>para</code>, <code>plusmn</code>,
+								<code>pound</code>, <code>quot</code>, <code>QUOT</code>, <code>raquo</code>, <code>reg</code>, <code>REG</code>, <code>sect</code>, <code>shy</code>, <code>sup1</code>, <code>sup2</code>, <code>sup3</code>, <code>szlig</code>, <code>thorn</code>, <code>THORN</code>,
+								<code>times</code>, <code>uacute</code>, <code>Uacute</code>, <code>ucirc</code>, <code>Ucirc</code>, <code>ugrave</code>, <code>Ugrave</code>, <code>uml</code>, <code>uuml</code>, <code>Uuml</code>, <code>yacute</code>, <code>Yacute</code>, <code>yen</code>
+							and <code>yuml</code></p>
+						</blockquote>
+					</p>
+				</details>
+				<p>To decode <a href="https://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references">all HTML entities</a>
+				import from <code>speedy-entities/lib/full</code>. The size of this bundle is 12.5 kB gzipped.</p>
+				<pre><code class="language-ts"><span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">decodeXml</span><span style="color: #000000">, </span><span style="color: #001080">decodeHtml</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;speedy-entities/lib/full&#039;</span><span style="color: #000000">;</span>
+
+<span style="color: #795E26">decodeXml</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;#X61;&amp;#98;&amp;lt;&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;ab&amp;lt&quot;</span>
+<span style="color: #795E26">decodeHtml</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;NotNestedGreaterGreater;&amp;CounterClockwiseContourIntegral;&#039;</span><span style="color: #000000">);</span>
+<span style="color: #008000">// → &quot;\u2aa2\u0338\u2233&quot;</span>
+</code></pre>
+				<p>You can manually add entities that <code>decodeXml</code> and <code>decodeHtml</code> would recognize:</p>
+				<pre><code class="language-ts"><span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">decodeXml</span><span style="color: #000000">, </span><span style="color: #001080">decodeHtml</span><span style="color: #000000">, </span><span style="color: #001080">xmlEntityManager</span><span style="color: #000000">, </span><span style="color: #001080">htmlEntityManager</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;speedy-entities&#039;</span><span style="color: #000000">;</span>
+
+<span style="color: #001080">xmlEntityManager</span><span style="color: #000000">.</span><span style="color: #795E26">set</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;foo&#039;</span><span style="color: #000000">, </span><span style="color: #A31515">&#039;okay&#039;</span><span style="color: #000000">);</span>
+<span style="color: #795E26">decodeXml</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;foo;&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;okay&quot;</span>
+
+<span style="color: #001080">htmlEntityManager</span><span style="color: #000000">.</span><span style="color: #795E26">set</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;bar&#039;</span><span style="color: #000000">, </span><span style="color: #A31515">&#039;nope&#039;</span><span style="color: #000000">);</span>
+<span style="color: #795E26">decodeHtml</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;bar;&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;nope&quot;</span>
+</code></pre>
+				<a href="#custom-decoders" id="custom-decoders" style="color: inherit; text-decoration: none;">
+					<h2>Custom decoders</h2>
+				</a>
+				<p>You can create a custom decoder that would recognize custom entities.</p>
 				<pre><code class="language-ts"><span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">createEntityDecoder</span><span style="color: #000000">, </span><span style="color: #001080">createEntityManager</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;speedy-entities&#039;</span><span style="color: #000000">;</span>
 
 <span style="color: #008000">// Create an entity manager</span>
@@ -87,22 +127,30 @@
 <span style="color: #008000">// Register a new legacy entity</span>
 <span style="color: #001080">entityManager</span><span style="color: #000000">.</span><span style="color: #795E26">set</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;bar&#039;</span><span style="color: #000000">, </span><span style="color: #A31515">&#039;nope&#039;</span><span style="color: #000000">, </span><span style="color: #0000FF">true</span><span style="color: #000000">);</span>
 
+<span style="color: #008000">// Register a batch of entities</span>
+<span style="color: #001080">entityManager</span><span style="color: #000000">.</span><span style="color: #795E26">set</span><span style="color: #000000">({</span>
+<span style="color: #000000">  </span><span style="color: #001080">foo:</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;okay&#039;</span><span style="color: #000000">,</span>
+<span style="color: #000000">  </span><span style="color: #001080">qux:</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;yeah&#039;</span><span style="color: #000000">,</span>
+<span style="color: #000000">});</span>
+
 <span style="color: #008000">// Create a decoder</span>
 <span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">decode</span><span style="color: #000000"> = </span><span style="color: #795E26">createEntityDecoder</span><span style="color: #000000">(</span><span style="color: #001080">entityManager</span><span style="color: #000000">);</span>
 
+<span style="color: #008000">// Decode non-legacy entities</span>
+<span style="color: #795E26">decode</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;foo&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;&amp;foo&quot;</span>
 <span style="color: #795E26">decode</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;foo;&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;okay&quot;</span>
 
+<span style="color: #008000">// Decode legacy entities</span>
 <span style="color: #795E26">decode</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;bar&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;nope&quot;</span>
+<span style="color: #795E26">decode</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;bar;&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;nope&quot;</span>
 
+<span style="color: #008000">// Decode numeric character references</span>
 <span style="color: #795E26">decode</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;&amp;#X61;&amp;#x62;&amp;#x63;&#039;</span><span style="color: #000000">); </span><span style="color: #008000">// → &quot;abc&quot;</span>
 </code></pre>
 				<a href="#performance" id="performance" style="color: inherit; text-decoration: none;">
 					<h1>Performance</h1>
 				</a>
-				<p>Clone this repo and use <code>npm ci &amp;&amp; npm run perf</code> to run the performance testsuite. </p>
-				<a href="#xml-character-reference-decoding" id="xml-character-reference-decoding" style="color: inherit; text-decoration: none;">
-					<h3>XML character reference decoding</h3>
-				</a>
+				<p>Clone this repo and use <code>npm ci &amp;&amp; npm run perf</code> to run the performance testsuite.</p>
 				<p>Results are in millions of operations per second. The higher number is better.</p>
 				<table>
 					<thead>
@@ -110,100 +158,65 @@
 							<th></th>
 							<th align="right">speedy-entities <br/><code>decodeXml</code></th>
 							<th align="right"><a href="https://github.com/fb55/entities">fb55/entities</a> <br/><code>decodeXML</code></th>
-						</tr>
-					</thead>
-					<tbody><tr>
-							<td><code>&quot;&amp;#X61;&amp;#x62;&amp;#x63;&quot;</code></td>
-							<td align="right">3.26</td>
-							<td align="right">1.42</td>
-						</tr>
-						<tr>
-							<td><code>&quot;&amp;#X61&amp;#x62&amp;#x63&quot;</code></td>
-							<td align="right">10.81</td>
-							<td align="right">4.70</td>
-						</tr>
-						<tr>
-							<td><code>&quot;&amp;#97;&amp;#98;&amp;#99;&quot;</code></td>
-							<td align="right">3.09</td>
-							<td align="right">1.41</td>
-						</tr>
-						<tr>
-							<td><code>&quot;&amp;#97&amp;#98&amp;#99&quot;</code></td>
-							<td align="right">11.31</td>
-							<td align="right">4.86</td>
-						</tr>
-						<tr>
-							<td><code>&quot;&amp;amp;&amp;lt;&amp;gt;&quot;</code></td>
-							<td align="right">8.86</td>
-							<td align="right">1.53</td>
-						</tr>
-						<tr>
-							<td><code>&quot;&amp;amp&amp;lt&amp;gt&quot;</code></td>
-							<td align="right">9.33</td>
-							<td align="right">4.71</td>
-						</tr>
-						<tr>
-							<td><code>&quot;&amp;NotNestedGreaterGreater;&quot;</code></td>
-							<td align="right">35.60</td>
-							<td align="right">2.43</td>
-						</tr>
-						<tr>
-							<td><code>&quot;&amp;NotNestedGreaterGreater&quot;</code></td>
-							<td align="right">34.82</td>
-							<td align="right">3.80</td>
-						</tr>
-				</tbody></table>
-				<a href="#html-character-reference-decoding" id="html-character-reference-decoding" style="color: inherit; text-decoration: none;">
-					<h3>HTML character reference decoding</h3>
-				</a>
-				<p>Results are in millions of operations per second. The higher number is better.</p>
-				<table>
-					<thead>
-						<tr>
-							<th></th>
 							<th align="right">speedy-entities <br/><code>decodeHtml</code></th>
 							<th align="right"><a href="https://github.com/fb55/entities">fb55/entities</a> <br/><code>decodeHTML</code></th>
 						</tr>
 					</thead>
 					<tbody><tr>
 							<td><code>&quot;&amp;#X61;&amp;#x62;&amp;#x63;&quot;</code></td>
-							<td align="right">3.18</td>
-							<td align="right">1.07</td>
+							<td align="right">2.36</td>
+							<td align="right">1.25</td>
+							<td align="right">2.29</td>
+							<td align="right">0.88</td>
 						</tr>
 						<tr>
 							<td><code>&quot;&amp;#X61&amp;#x62&amp;#x63&quot;</code></td>
-							<td align="right">3.25</td>
-							<td align="right">1.04</td>
+							<td align="right">4.61</td>
+							<td align="right">3.00</td>
+							<td align="right">2.39</td>
+							<td align="right">0.72</td>
 						</tr>
 						<tr>
 							<td><code>&quot;&amp;#97;&amp;#98;&amp;#99;&quot;</code></td>
-							<td align="right">3.06</td>
-							<td align="right">1.06</td>
+							<td align="right">2.24</td>
+							<td align="right">0.71</td>
+							<td align="right">2.25</td>
+							<td align="right">0.92</td>
 						</tr>
 						<tr>
 							<td><code>&quot;&amp;#97&amp;#98&amp;#99&quot;</code></td>
-							<td align="right">3.02</td>
-							<td align="right">1.02</td>
+							<td align="right">5.09</td>
+							<td align="right">3.07</td>
+							<td align="right">2.21</td>
+							<td align="right">0.88</td>
 						</tr>
 						<tr>
 							<td><code>&quot;&amp;amp;&amp;lt;&amp;gt;&quot;</code></td>
-							<td align="right">6.43</td>
-							<td align="right">1.27</td>
+							<td align="right">3.98</td>
+							<td align="right">1.28</td>
+							<td align="right">3.34</td>
+							<td align="right">1.06</td>
 						</tr>
 						<tr>
 							<td><code>&quot;&amp;amp&amp;lt&amp;gt&quot;</code></td>
-							<td align="right">6.72</td>
-							<td align="right">1.24</td>
+							<td align="right">4.08</td>
+							<td align="right">3.10</td>
+							<td align="right">3.46</td>
+							<td align="right">1.02</td>
 						</tr>
 						<tr>
 							<td><code>&quot;&amp;NotNestedGreaterGreater;&quot;</code></td>
-							<td align="right">6.96</td>
-							<td align="right">2.23</td>
+							<td align="right">6.47</td>
+							<td align="right">1.84</td>
+							<td align="right">3.80</td>
+							<td align="right">1.64</td>
 						</tr>
 						<tr>
 							<td><code>&quot;&amp;NotNestedGreaterGreater&quot;</code></td>
-							<td align="right">7.05</td>
-							<td align="right">3.63</td>
+							<td align="right">6.44</td>
+							<td align="right">2.74</td>
+							<td align="right">4.00</td>
+							<td align="right">2.41</td>
 						</tr>
 				</tbody></table>
 			</div>
@@ -228,7 +241,16 @@
 						<a href="interfaces/IEntityManager.html" class="tsd-kind-icon">IEntity<wbr>Manager</a>
 					</li>
 					<li class=" tsd-kind-variable">
+						<a href="modules.html#htmlEntities" class="tsd-kind-icon">html<wbr>Entities</a>
+					</li>
+					<li class=" tsd-kind-variable">
 						<a href="modules.html#htmlEntityManager" class="tsd-kind-icon">html<wbr>Entity<wbr>Manager</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="modules.html#legacyHtmlEntities" class="tsd-kind-icon">legacy<wbr>Html<wbr>Entities</a>
+					</li>
+					<li class=" tsd-kind-variable">
+						<a href="modules.html#xmlEntities" class="tsd-kind-icon">xml<wbr>Entities</a>
 					</li>
 					<li class=" tsd-kind-variable">
 						<a href="modules.html#xmlEntityManager" class="tsd-kind-icon">xml<wbr>Entity<wbr>Manager</a>
