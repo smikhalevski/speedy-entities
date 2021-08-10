@@ -21,11 +21,11 @@ decodeXml('&#X61;&#98;&lt;'); // → "ab&lt"
 decodeHtml('&ltfoo&AElig'); // → "<foo\u00c6"
 ```
 
-The bundle is just [**2.3 KB gzipped**](https://bundlephobia.com/package/speedy-entities) but `decodeHtml` supports only
-legacy HTML entities.
+By default, `decodeHtml` supports only legacy HTML entities. This allowed to reduce the bundle size to just
+[2.3 kB gzipped](https://bundlephobia.com/package/speedy-entities).
 
 <details>
-<summary>Legacy HTML entities</summary>
+<summary>The list of legacy HTML entities</summary>
 <p>
 
 > `aacute`, `Aacute`, `acirc`, `Acirc`, `acute`, `aelig`, `AElig`, `agrave`, `Agrave`, `amp`, `AMP`, `aring`, `Aring`,
@@ -42,16 +42,17 @@ legacy HTML entities.
 </details>
 
 To decode [all HTML entities](https://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references)
-require `speedy-entities/lib/full`. The bundle size is **12.5 KB gzipped**.
+import from `speedy-entities/lib/full`. The size of this bundle is 12.5 kB gzipped.
 
 ```ts
 import {decodeXml, decodeHtml} from 'speedy-entities/lib/full';
 
 decodeXml('&#X61;&#98;&lt;'); // → "ab&lt"
-decodeHtml('&NotNestedGreaterGreater;&CounterClockwiseContourIntegral;'); // → "\u2aa2\u0338\u2233"
+decodeHtml('&NotNestedGreaterGreater;&CounterClockwiseContourIntegral;');
+// → "\u2aa2\u0338\u2233"
 ```
 
-Also, you can manually add entities that `decodeXml` and `decodeHtml` would recognize:
+You can manually add entities that `decodeXml` and `decodeHtml` would recognize:
 
 ```ts
 import {decodeXml, decodeHtml, xmlEntityManager, htmlEntityManager} from 'speedy-entities';
