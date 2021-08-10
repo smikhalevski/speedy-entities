@@ -21,10 +21,11 @@ decodeXml('&#X61;&#98;&lt;'); // → "ab&lt"
 decodeHtml('&ltfoo&AElig'); // → "<foo\u00c6"
 ```
 
-The bundle is just **2.3 KB gzipped** but `decodeHtml` supports only legacy HTML entities.
+By default, `decodeHtml` supports only legacy HTML entities. This allowed to reduce the bundle size to just
+[2.3 kB gzipped](https://bundlephobia.com/package/speedy-entities).
 
 <details>
-<summary>Legacy HTML entities</summary>
+<summary>The list of legacy HTML entities</summary>
 <p>
 
 > `aacute`, `Aacute`, `acirc`, `Acirc`, `acute`, `aelig`, `AElig`, `agrave`, `Agrave`, `amp`, `AMP`, `aring`, `Aring`,
@@ -41,13 +42,14 @@ The bundle is just **2.3 KB gzipped** but `decodeHtml` supports only legacy HTML
 </details>
 
 To decode [all HTML entities](https://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references)
-require `speedy-entities/lib/full`. The bundle size is **12.5 KB gzipped**.
+import from `speedy-entities/lib/full`. The size of this bundle is 12.5 kB gzipped.
 
 ```ts
 import {decodeXml, decodeHtml} from 'speedy-entities/lib/full';
 
 decodeXml('&#X61;&#98;&lt;'); // → "ab&lt"
-decodeHtml('&NotNestedGreaterGreater;&CounterClockwiseContourIntegral;'); // → "\u2aa2\u0338\u2233"
+decodeHtml('&NotNestedGreaterGreater;&CounterClockwiseContourIntegral;');
+// → "\u2aa2\u0338\u2233"
 ```
 
 You can manually add entities that `decodeXml` and `decodeHtml` would recognize:
@@ -103,32 +105,15 @@ decode('&#X61;&#x62;&#x63;'); // → "abc"
 
 Clone this repo and use `npm ci && npm run perf` to run the performance testsuite.
 
-### XML character reference decoding
-
 Results are in millions of operations per second. The higher number is better.
 
-|  | speedy-entities <br/>`decodeXml` | [fb55/entities](https://github.com/fb55/entities) <br/>`decodeXML` |
-| ----------------------------- | ---: | ---: |
-| `"&#X61;&#x62;&#x63;"`        | 2.36 | 1.25 |
-| `"&#X61&#x62&#x63"`           | 4.61 | 3.00 |
-| `"&#97;&#98;&#99;"`           | 2.24 | 0.71 |
-| `"&#97&#98&#99"`              | 5.09 | 3.07 |
-| `"&amp;&lt;&gt;"`             | 3.98 | 1.28 |
-| `"&amp&lt&gt"`                | 4.08 | 3.10 |
-| `"&NotNestedGreaterGreater;"` | 6.47 | 1.84 |
-| `"&NotNestedGreaterGreater"`  | 6.44 | 2.74 |
-
-### HTML character reference decoding
-
-Results are in millions of operations per second. The higher number is better.
-
-|  | speedy-entities <br/>`decodeHtml` | [fb55/entities](https://github.com/fb55/entities) <br/>`decodeHTML` |
-| ----------------------------- | ---: | ---: |
-| `"&#X61;&#x62;&#x63;"`        | 2.29 | 0.88 |
-| `"&#X61&#x62&#x63"`           | 2.39 | 0.72 |
-| `"&#97;&#98;&#99;"`           | 2.25 | 0.92 |
-| `"&#97&#98&#99"`              | 2.21 | 0.88 |
-| `"&amp;&lt;&gt;"`             | 3.34 | 1.06 |
-| `"&amp&lt&gt"`                | 3.46 | 1.02 |
-| `"&NotNestedGreaterGreater;"` | 3.80 | 1.64 |
-| `"&NotNestedGreaterGreater"`  | 4.00 | 2.41 |
+|  | speedy-entities <br/>`decodeXml` | [fb55/entities](https://github.com/fb55/entities) <br/>`decodeXML` | speedy-entities <br/>`decodeHtml` | [fb55/entities](https://github.com/fb55/entities) <br/>`decodeHTML` |
+| ----------------------------- | ---: | ---: | ---: | ---: |
+| `"&#X61;&#x62;&#x63;"`        | 2.36 | 1.25 | 2.29 | 0.88 |
+| `"&#X61&#x62&#x63"`           | 4.61 | 3.00 | 2.39 | 0.72 |
+| `"&#97;&#98;&#99;"`           | 2.24 | 0.71 | 2.25 | 0.92 |
+| `"&#97&#98&#99"`              | 5.09 | 3.07 | 2.21 | 0.88 |
+| `"&amp;&lt;&gt;"`             | 3.98 | 1.28 | 3.34 | 1.06 |
+| `"&amp&lt&gt"`                | 4.08 | 3.10 | 3.46 | 1.02 |
+| `"&NotNestedGreaterGreater;"` | 6.47 | 1.84 | 3.80 | 1.64 |
+| `"&NotNestedGreaterGreater"`  | 6.44 | 2.74 | 4.00 | 2.41 |
