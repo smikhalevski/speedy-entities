@@ -11,7 +11,7 @@
   "scripts": {
     "build": "npm run encode-data && tsc && npm run rollup && npm run terser",
     "encode-data": "node encode-data.js",
-    "rollup": "for p in ./lib/index.js ./lib/full.js; do rollup --input $p --file ${p%.js}-cjs.js --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-json || exit 1; done",
+    "rollup": "for p in ./lib/index.js ./lib/full.js; do rollup --external @smikhalevski/trie --input $p --file ${p%.js}-cjs.js --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-json || exit 1; done",
     "terser": "for p in ./lib/index-cjs.js ./lib/full-cjs.js; do terser --compress --mangle toplevel --output $p -- $p || exit 1; done",
     "clean": "rm -rf ./src/main/gen ./lib ./docs",
     "test": "jest --detectOpenHandles",
@@ -42,7 +42,6 @@
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^13.0.0",
     "@smikhalevski/perf-test": "^1.0.0",
-    "@smikhalevski/trie": "^1.0.0",
     "@types/jest": "^26.0.23",
     "chalk": "^4.1.1",
     "entities": "^2.2.0",
@@ -54,6 +53,7 @@
     "typescript": "4.2.4"
   },
   "dependencies": {
+    "@smikhalevski/trie": "^1.0.1",
     "tokenizer-dsl": "^1.0.1"
   }
 }
