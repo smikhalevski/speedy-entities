@@ -4,7 +4,7 @@ import {IEntityManager} from './createEntityManager';
 import {fromCodePoint} from './fromCodePoint';
 
 // [0-9]
-const isDecNumberChar: CharCodeChecker = (charCode) => charCode >= 48 && charCode <= 57;
+const isDecNumberChar: CharCodeChecker = (charCode) => charCode >= CharCode['0'] && charCode <= CharCode['9'];
 
 // [0-9A-Fa-f]
 const isHexNumberChar: CharCodeChecker = (charCode) =>
