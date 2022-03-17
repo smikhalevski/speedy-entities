@@ -1,7 +1,5 @@
-const {test} = require('@smikhalevski/perf-test');
 const {decodeXML, decodeHTML} = require('entities');
 const {decodeXml, decodeHtml} = require('../../lib/full-cjs');
-const chalk = require('chalk');
 
 const values = [
   '&#X61;&#x62;&#x63;', // terminated hex
@@ -14,18 +12,40 @@ const values = [
   '&NotNestedGreaterGreater', // unterminated non-legacy HTML
 ];
 
-console.log(chalk.bold.inverse(' XML benchmark '));
+describe('XML benchmark', () => {
+  values.forEach((value) => {
+    describe(value, () => {
 
-values.map((value) => {
-  console.log('\n"' + chalk.bold(value) + '"');
-  test('  speedy-entities  ', () => decodeXml(value));
-  test('  fb55/entities    ', () => decodeXML(value));
+      test('speedy-entities', (measure) => {
+        measure(() => {
+          decodeXml(value);
+        });
+      });
+
+      test('fb55/entities', (measure) => {
+        measure(() => {
+          decodeXML(value);
+        });
+      });
+    });
+  });
 });
 
-console.log('\n\n' + chalk.bold.inverse(' HTML benchmark '));
+describe('HTML benchmark', () => {
+  values.forEach((value) => {
+    describe(value, () => {
 
-values.map((value) => {
-  console.log('\n"' + chalk.bold(value) + '"');
-  test('  speedy-entities  ', () => decodeHtml(value));
-  test('  fb55/entities    ', () => decodeHTML(value));
+      test('speedy-entities', (measure) => {
+        measure(() => {
+          decodeHtml(value);
+        });
+      });
+
+      test('fb55/entities', (measure) => {
+        measure(() => {
+          decodeHTML(value);
+        });
+      });
+    });
+  });
 });
