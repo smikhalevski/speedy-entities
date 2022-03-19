@@ -1,7 +1,6 @@
-const {test} = require('@smikhalevski/perf-test');
 const {decodeXML, decodeHTML} = require('entities');
 const {decodeXml, decodeHtml} = require('../../lib/full-cjs');
-const chalk = require('chalk');
+const fb55EntitiesPackageJson = require('entities/package.json');
 
 const values = [
   '&#X61;&#x62;&#x63;', // terminated hex
@@ -14,18 +13,59 @@ const values = [
   '&NotNestedGreaterGreater', // unterminated non-legacy HTML
 ];
 
-console.log(chalk.bold.inverse(' XML benchmark '));
+describe('Average across ' + values.length + ' samples', () => {
 
-values.map((value) => {
-  console.log('\n"' + chalk.bold(value) + '"');
-  test('  speedy-entities  ', () => decodeXml(value));
-  test('  fb55/entities    ', () => decodeXML(value));
+  test('speedy-entities', (measure) => {
+    values.forEach((value) => {
+      measure(() => {
+        decodeXml(value);
+      }, {warmupIterationCount: 1_000, targetRme: 0});
+    });
+  });
+
+  test('fb55/entities@' + fb55EntitiesPackageJson.version, (measure) => {
+    values.forEach((value) => {
+      measure(() => {
+        decodeXML(value);
+      }, {warmupIterationCount: 1_000, targetRme: 0});
+    });
+  });
 });
 
-console.log('\n\n' + chalk.bold.inverse(' HTML benchmark '));
+describe('XML benchmark', () => {
+  values.forEach((value) => {
+    describe(value, () => {
 
-values.map((value) => {
-  console.log('\n"' + chalk.bold(value) + '"');
-  test('  speedy-entities  ', () => decodeHtml(value));
-  test('  fb55/entities    ', () => decodeHTML(value));
+      test('speedy-entities', (measure) => {
+        measure(() => {
+          decodeXml(value);
+        });
+      });
+
+      test('fb55/entities', (measure) => {
+        measure(() => {
+          decodeXML(value);
+        });
+      });
+    });
+  });
+});
+
+describe('HTML benchmark', () => {
+  values.forEach((value) => {
+    describe(value, () => {
+
+      test('speedy-entities', (measure) => {
+        measure(() => {
+          decodeHtml(value);
+        });
+      });
+
+      test('fb55/entities', (measure) => {
+        measure(() => {
+          decodeHTML(value);
+        });
+      });
+    });
+  });
 });
