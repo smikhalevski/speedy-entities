@@ -1,5 +1,6 @@
 const {decodeXML, decodeHTML} = require('entities');
 const {decodeXml, decodeHtml} = require('../../lib/full-cjs');
+const fb55EntitiesPackageJson = require('entities/package.json');
 
 const values = [
   '&#X61;&#x62;&#x63;', // terminated hex
@@ -11,6 +12,25 @@ const values = [
   '&NotNestedGreaterGreater;', // terminated non-legacy HTML
   '&NotNestedGreaterGreater', // unterminated non-legacy HTML
 ];
+
+describe('Average across ' + values.length + ' samples', () => {
+
+  test('speedy-entities', (measure) => {
+    values.forEach((value) => {
+      measure(() => {
+        decodeXml(value);
+      }, {warmupIterationCount: 1_000, targetRme: 0});
+    });
+  });
+
+  test('fb55/entities@' + fb55EntitiesPackageJson.version, (measure) => {
+    values.forEach((value) => {
+      measure(() => {
+        decodeXML(value);
+      }, {warmupIterationCount: 1_000, targetRme: 0});
+    });
+  });
+});
 
 describe('XML benchmark', () => {
   values.forEach((value) => {

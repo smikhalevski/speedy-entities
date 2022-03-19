@@ -1,4 +1,4 @@
-import {allCharBy, CharCodeChecker, ResultCode} from 'tokenizer-dsl';
+import {all, char, CharCodeChecker, ResultCode} from 'tokenizer-dsl';
 import {CharCode} from './CharCode';
 import {IEntityManager} from './createEntityManager';
 import {fromCodePoint} from './fromCodePoint';
@@ -8,13 +8,13 @@ const isDecNumberChar: CharCodeChecker = (charCode) => charCode >= CharCode['0']
 
 // [0-9A-Fa-f]
 const isHexNumberChar: CharCodeChecker = (charCode) =>
-    isDecNumberChar(charCode)
+    charCode >= CharCode['0'] && charCode <= CharCode['9']
     || charCode >= CharCode['a'] && charCode <= CharCode['f']
     || charCode >= CharCode['A'] && charCode <= CharCode['F'];
 
-const takeDecNumber = allCharBy(isDecNumberChar, 2, 6);
+const takeDecNumber = all(char(isDecNumberChar), {minimumCount: 2, maximumCount: 6});
 
-const takeHexNumber = allCharBy(isHexNumberChar, 2, 6);
+const takeHexNumber = all(char(isHexNumberChar), {minimumCount: 2, maximumCount: 6});
 
 export interface IEntityDecoderOptions {
 
