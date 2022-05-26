@@ -1,4 +1,4 @@
-import {decodeHtml} from '../main/full';
+import {decodeHtml} from '../main';
 
 describe('decodeHtml', () => {
 

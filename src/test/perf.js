@@ -1,5 +1,5 @@
 const {decodeXML, decodeHTML} = require('entities');
-const {decodeXml, decodeHtml} = require('../../lib/full-cjs');
+const {decodeXml, decodeHtml} = require('../../lib/index-cjs');
 
 const values = [
   '&#X61;&#x62;&#x63;', // terminated hex
