@@ -1,20 +1,5 @@
-import {all, char, CharCodeChecker, ResultCode} from 'tokenizer-dsl';
-import {CharCode} from './CharCode';
 import {IEntityManager} from './createEntityManager';
 import {fromCodePoint} from './fromCodePoint';
-
-// [0-9]
-const isDecNumberChar: CharCodeChecker = (charCode) => charCode >= CharCode['0'] && charCode <= CharCode['9'];
-
-// [0-9A-Fa-f]
-const isHexNumberChar: CharCodeChecker = (charCode) =>
-    charCode >= CharCode['0'] && charCode <= CharCode['9']
-    || charCode >= CharCode['a'] && charCode <= CharCode['f']
-    || charCode >= CharCode['A'] && charCode <= CharCode['F'];
-
-const takeDecNumber = all(char(isDecNumberChar), {minimumCount: 2, maximumCount: 6});
-
-const takeHexNumber = all(char(isHexNumberChar), {minimumCount: 2, maximumCount: 6});
 
 export interface IEntityDecoderOptions {
 
@@ -63,9 +48,9 @@ export function createEntityDecoder(entityManager: IEntityManager, options?: IEn
     let textIndex = 0;
     let charIndex = 0;
 
-    const charCount = input.length;
+    const inputLength = input.length;
 
-    while (charIndex < charCount) {
+    while (charIndex < inputLength) {
 
       let startIndex = input.indexOf('&', charIndex);
       if (startIndex === -1) {
@@ -78,29 +63,58 @@ export function createEntityDecoder(entityManager: IEntityManager, options?: IEn
       let endIndex;
 
       // Numeric character reference
-      if (input.charCodeAt(++startIndex) === CharCode['#']) {
-        let radix;
+      if (input.charCodeAt(++startIndex) === 35 /* # */) {
 
         const radixCharCode = input.charCodeAt(++startIndex);
 
-        if (radixCharCode === CharCode['x'] || radixCharCode === CharCode['X']) {
-          endIndex = takeHexNumber(input, ++startIndex);
-          radix = 16;
+        let offset = 0;
+        let charCode;
+        let codePoint = 0;
+
+        if (radixCharCode === 120 /* x */ || radixCharCode === 88 /* X */) {
+          ++startIndex;
+
+          while (offset < 6 && startIndex + offset < inputLength) {
+            charCode = input.charCodeAt(startIndex + offset);
+
+            if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */) {
+              codePoint = codePoint * 16 + (charCode - (charCode & 0b1110000));
+              ++offset;
+            } else if (charCode >= 97 /* a */ && charCode <= 102 /* f */ || charCode >= 65 /* A */ && charCode <= 70 /* F */) {
+              codePoint = codePoint * 16 + (charCode - (charCode & 0b1110000)) + 9;
+              ++offset;
+            } else {
+              break;
+            }
+          }
+
         } else {
-          endIndex = takeDecNumber(input, startIndex);
-          radix = 10;
+
+          while (offset < 6 && startIndex + offset < inputLength) {
+            charCode = input.charCodeAt(startIndex + offset);
+
+            if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */) {
+              codePoint = codePoint * 10 + (charCode - (charCode & 0b1110000));
+              ++offset;
+            } else {
+              break;
+            }
+          }
+
         }
-        if (endIndex !== ResultCode.NO_MATCH) {
-          const terminated = input.charCodeAt(endIndex) === CharCode[';'];
+
+        endIndex = startIndex;
+
+        if (offset >= 2) {
+          endIndex += offset;
+          const terminated = input.charCodeAt(endIndex) === 59 /* ; */;
 
           if (terminated || !numericCharacterReferenceTerminated) {
-            entityValue = fromCodePoint(parseInt(input.substring(startIndex, endIndex), radix), replacementChar, illegalCodePointsForbidden);
+            entityValue = fromCodePoint(codePoint, replacementChar, illegalCodePointsForbidden);
           }
           if (terminated) {
-            endIndex++;
+            ++endIndex;
           }
-        } else {
-          endIndex = startIndex;
         }
 
       } else {
@@ -110,12 +124,12 @@ export function createEntityDecoder(entityManager: IEntityManager, options?: IEn
         const entity = entityManager.search(input, startIndex);
 
         if (entity != null) {
-          endIndex = startIndex + entity.name.length;
+          endIndex += entity.name.length;
 
-          const terminated = input.charCodeAt(endIndex) === CharCode[';'];
+          const terminated = input.charCodeAt(endIndex) === 59 /* ; */;
 
           if (terminated) {
-            endIndex++;
+            ++endIndex;
           }
           if (terminated || entity.legacy) {
             entityValue = entity.value;
@@ -133,8 +147,8 @@ export function createEntityDecoder(entityManager: IEntityManager, options?: IEn
     if (textIndex === 0) {
       return input;
     }
-    if (textIndex !== charCount) {
-      output += input.substr(textIndex);
+    if (textIndex !== inputLength) {
+      output += input.substring(textIndex);
     }
     return output;
   };

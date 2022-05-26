@@ -1,6 +1,5 @@
 const {decodeXML, decodeHTML} = require('entities');
 const {decodeXml, decodeHtml} = require('../../lib/full-cjs');
-const fb55EntitiesPackageJson = require('entities/package.json');
 
 const values = [
   '&#X61;&#x62;&#x63;', // terminated hex
@@ -23,7 +22,7 @@ describe('Average across ' + values.length + ' samples', () => {
     });
   });
 
-  test('fb55/entities@' + fb55EntitiesPackageJson.version, (measure) => {
+  test('fb55/entities', (measure) => {
     values.forEach((value) => {
       measure(() => {
         decodeXML(value);
