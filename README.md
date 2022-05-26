@@ -68,10 +68,10 @@ decodeHtml('&bar;'); // → "nope"
 You can create a custom decoder that would recognize custom entities.
 
 ```ts
-import {createEntityDecoder, createEntityManager} from 'speedy-entities';
+import {createEntityDecoder, EntityManager} from 'speedy-entities';
 
 // Create an entity manager
-const entityManager = createEntityManager();
+const entityManager = new EntityManager();
 
 // Register a new entity
 entityManager.set('foo', 'okay');

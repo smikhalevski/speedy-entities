@@ -1,9 +1,9 @@
-import {createEntityDecoder, createEntityManager} from '../main';
+import {createEntityDecoder, EntityManager} from '../main';
 
 describe('createEntityDecoder', () => {
 
   test('supports arbitrary named entities', () => {
-    const entityManager = createEntityManager();
+    const entityManager = new EntityManager();
 
     entityManager.set('foo', 'okay');
     entityManager.set('bar', 'nope', true);
@@ -19,7 +19,7 @@ describe('createEntityDecoder', () => {
   });
 
   test('supports numeric entities', () => {
-    const decode = createEntityDecoder(createEntityManager());
+    const decode = createEntityDecoder(new EntityManager());
 
     expect(decode('&#X61;&#x62;&#x63;')).toBe('abc');
   });

@@ -1,5 +1,5 @@
 import {createEntityDecoder} from './createEntityDecoder';
-import {createEntityManager} from './createEntityManager';
+import {EntityManager} from './EntityManager';
 
 export const xmlEntities: Record<string, string> = {
   amp: '&',
@@ -12,7 +12,7 @@ export const xmlEntities: Record<string, string> = {
 /**
  * An entity manager that supports XML entities.
  */
-export const xmlEntityManager = createEntityManager();
+export const xmlEntityManager = new EntityManager();
 
 xmlEntityManager.setAll(xmlEntities);
 
