@@ -1,11 +1,11 @@
-import {createEntityManager, IEntity, IEntityManager} from '../main/createEntityManager';
+import {EntityManager, IEntity} from '../main';
 
-describe('createEntityManager', () => {
+describe('EntityManager', () => {
 
-  let manager: IEntityManager;
+  let manager: EntityManager;
 
   beforeEach(() => {
-    manager = createEntityManager();
+    manager = new EntityManager();
   });
 
   test('searches for a previously added entity', () => {

@@ -1,4 +1,4 @@
-import {decodeXml} from '../main/decodeXml';
+import {decodeXml} from '../main';
 
 describe('decodeXml', () => {
 
