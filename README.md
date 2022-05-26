@@ -1,4 +1,4 @@
-# speedy-entities&ensp;🏎&ensp;[![build](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml/badge.svg?branch=master&event=push)](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml)
+# speedy-entities&ensp;🏎💨&ensp;[![build](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml/badge.svg?branch=master&event=push)](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml)
 
 [The fastest](#performance) XML/HTML entity decoder that supports customizable named character references.
 
@@ -18,7 +18,9 @@ There are two preconfigured decoders: `decodeXml` and `decodeHtml`.
 import {decodeXml, decodeHtml} from 'speedy-entities';
 
 decodeXml('&#X61;&#98;&lt;'); // → "ab&lt"
+
 decodeHtml('&ltfoo&AElig'); // → "<foo\u00c6"
+
 decodeHtml('&NotNestedGreaterGreater;&CounterClockwiseContourIntegral;');
 // → "\u2aa2\u0338\u2233"
 ```
@@ -37,7 +39,7 @@ decodeHtml('&bar;'); // → "nope"
 
 ## Custom decoders
 
-You can create a custom decoder that would recognize custom entities.
+You can create a custom decoder that would recognize numeric and custom entities.
 
 ```ts
 import {createEntityDecoder, EntityManager} from 'speedy-entities';
@@ -78,13 +80,13 @@ Clone this repo and use `npm ci && npm run perf` to run the performance testsuit
 
 Results are in millions of operations per second. The higher number is better.
 
-|  | speedy-entities <br/>`decodeXml` | [fb55/entities](https://github.com/fb55/entities) <br/>`decodeXML` | speedy-entities <br/>`decodeHtml` | [fb55/entities](https://github.com/fb55/entities) <br/>`decodeHTML` |
-| ----------------------------- | ---: | ---: | ---: | ---: |
-| `"&#X61;&#x62;&#x63;"`        | 2.36 | 1.25 | 2.29 | 0.88 |
-| `"&#X61&#x62&#x63"`           | 4.61 | 3.00 | 2.39 | 0.72 |
-| `"&#97;&#98;&#99;"`           | 2.24 | 0.71 | 2.25 | 0.92 |
-| `"&#97&#98&#99"`              | 5.09 | 3.07 | 2.21 | 0.88 |
-| `"&amp;&lt;&gt;"`             | 3.98 | 1.28 | 3.34 | 1.06 |
-| `"&amp&lt&gt"`                | 4.08 | 3.10 | 3.46 | 1.02 |
-| `"&NotNestedGreaterGreater;"` | 6.47 | 1.84 | 3.80 | 1.64 |
-| `"&NotNestedGreaterGreater"`  | 6.44 | 2.74 | 4.00 | 2.41 |
+|                               | speedy-entities <br/>`decodeXml` | [fb55/entities](https://github.com/fb55/entities) <br/>`decodeXML` | speedy-entities <br/>`decodeHtml` | [fb55/entities](https://github.com/fb55/entities) <br/>`decodeHTML` |
+|-------------------------------|---------------------------------:| ---: | ---: | ---: |
+| `"&#X61;&#x62;&#x63;"`        | 3.9 | 2.5 | 4.3 | 2.5 |
+| `"&#X61&#x62&#x63"`           | 5.1 | 2.7 | 4.3 | 2.4 |
+| `"&#97;&#98;&#99;"`           | 4.5 | 2.4 | 4.5 | 2.4 |
+| `"&#97&#98&#99"`              | 5.5 | 2.4 | 4.2 | 2.3 |
+| `"&amp;&lt;&gt;"`             | 3.8 | 3.3 | 3.7 | 3.1 |
+| `"&amp&lt&gt"`                | 3.6 | 3.4 | 3.6 | 3.3 |
+| `"&NotNestedGreaterGreater;"` | 5.3 | 4.6 | 3.9 | 3.2 |
+| `"&NotNestedGreaterGreater"`  | 5.3 | 4.6 | 3.9 | 3.3 |

@@ -18,7 +18,7 @@ describe('Average across ' + values.length + ' samples', () => {
     values.forEach((value) => {
       measure(() => {
         decodeXml(value);
-      }, {warmupIterationCount: 1_000, targetRme: 0});
+      });
     });
   });
 
@@ -26,11 +26,11 @@ describe('Average across ' + values.length + ' samples', () => {
     values.forEach((value) => {
       measure(() => {
         decodeXML(value);
-      }, {warmupIterationCount: 1_000, targetRme: 0});
+      });
     });
   });
 
-}, {targetRme: 0.002});
+}, {warmupIterationCount: 1_000, targetRme: 0});
 
 describe('XML benchmark', () => {
   values.forEach((value) => {
