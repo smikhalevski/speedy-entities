@@ -36,7 +36,7 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
   options ||= {};
 
   const {
-    numericCharacterReferenceTerminated,
+    numericCharacterReferenceTerminated = false,
     illegalCodePointsForbidden = false,
     replacementChar = '\ufffd',
   } = options;
@@ -67,24 +67,24 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
 
         const radixCharCode = input.charCodeAt(++startIndex);
 
-        let offset = 0;
         let charCode;
+        let digitCount = 0;
         let codePoint = 0;
 
         if (radixCharCode === 120 /* x */ || radixCharCode === 88 /* X */) {
           endIndex = ++startIndex;
 
           // Parse hexadecimal
-          while (offset < 6 && endIndex < inputLength) {
+          while (digitCount < 6 && endIndex < inputLength) {
             charCode = input.charCodeAt(endIndex);
 
             if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */) {
               codePoint = codePoint * 16 + (charCode - (charCode & 0b1110000));
-              ++offset;
+              ++digitCount;
               ++endIndex;
             } else if (charCode >= 97 /* a */ && charCode <= 102 /* f */ || charCode >= 65 /* A */ && charCode <= 70 /* F */) {
               codePoint = codePoint * 16 + (charCode - (charCode & 0b1110000)) + 9;
-              ++offset;
+              ++digitCount;
               ++endIndex;
             } else {
               break;
@@ -95,12 +95,12 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
           endIndex = startIndex;
 
           // Parse decimal
-          while (offset < 6 && endIndex < inputLength) {
+          while (digitCount < 6 && endIndex < inputLength) {
             charCode = input.charCodeAt(endIndex);
 
             if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */) {
               codePoint = codePoint * 10 + (charCode - (charCode & 0b1110000));
-              ++offset;
+              ++digitCount;
               ++endIndex;
             } else {
               break;
@@ -109,7 +109,7 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
 
         }
 
-        if (offset >= 2) {
+        if (digitCount >= 2) {
           const terminated = input.charCodeAt(endIndex) === 59 /* ; */;
 
           if (terminated || !numericCharacterReferenceTerminated) {

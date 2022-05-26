@@ -29,7 +29,8 @@ describe('Average across ' + values.length + ' samples', () => {
       }, {warmupIterationCount: 1_000, targetRme: 0});
     });
   });
-});
+
+}, {targetRme: 0.002});
 
 describe('XML benchmark', () => {
   values.forEach((value) => {
@@ -48,7 +49,7 @@ describe('XML benchmark', () => {
       });
     });
   });
-});
+}, {targetRme: 0.002});
 
 describe('HTML benchmark', () => {
   values.forEach((value) => {
@@ -67,4 +68,4 @@ describe('HTML benchmark', () => {
       });
     });
   });
-});
+}, {targetRme: 0.002});
