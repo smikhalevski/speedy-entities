@@ -41,7 +41,7 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
     replacementChar = '\ufffd',
   } = options;
 
-  return (input) => {
+  return function entityDecoder(input) {
 
     let output = '';
 
@@ -59,7 +59,7 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
 
       charIndex = startIndex++;
 
-      let entityValue;
+      let entityValue: string | undefined;
       let endIndex;
 
       // Numeric character reference
@@ -117,7 +117,7 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
         // Named character reference
         endIndex = startIndex;
 
-        const entity = entityManager.search(input, startIndex);
+        const entity = entityManager.getByName(input, startIndex);
 
         if (entity != null) {
           endIndex += entity.name.length;

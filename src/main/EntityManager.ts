@@ -1,4 +1,4 @@
-import {createTrieNode, searchTrie, setTrie} from '@smikhalevski/trie';
+import {createTrieNode, ITrieNode, searchTrie, setTrie} from '@smikhalevski/trie';
 
 export interface IEntity {
   name: string,
@@ -8,7 +8,9 @@ export interface IEntity {
 
 export class EntityManager {
 
-  private _trie = createTrieNode<IEntity>();
+  private _decodeTrie = createTrieNode<IEntity>();
+  private _encodeTrie = createTrieNode<string>();
+  private _chars = new Set<number>();
 
   /**
    * Sets a new mapping from entity name to a replacement value.
@@ -18,7 +20,9 @@ export class EntityManager {
    * @param legacy If `true` then entity reference doesn't require a trailing semicolon.
    */
   set(name: string, value: string, legacy?: boolean): void {
-    return setTrie(this._trie, name, {name, value, legacy: legacy || false});
+    setTrie(this._decodeTrie, name, {name, value, legacy: legacy || false});
+    setTrie(this._encodeTrie, value, '&' + name + ';');
+    this._chars.add(value.charCodeAt(0));
   }
 
   /**
@@ -48,7 +52,15 @@ export class EntityManager {
    * @param input The string to search entity names in.
    * @param offset The offset in the `input` to start searching from.
    */
-  search(input: string, offset: number): IEntity | undefined {
-    return searchTrie(this._trie, input, offset)?.value;
+  getByName(input: string, offset: number): IEntity | undefined {
+    return searchTrie(this._decodeTrie, input, offset)?.value;
+  }
+
+  getRe(): RegExp {
+    return new RegExp('[\\t\\n!-,./:-@[-`\\f{-}$\\x80-\\uFFFF' + Array.from(this._chars).map((char) => '\\u' + char.toString(16).padStart(4, '0')).join('') + ']', 'g');
+  }
+
+  getByValue(input: string, offset: number): ITrieNode<string> | undefined {
+    return searchTrie(this._encodeTrie, input, offset);
   }
 }
