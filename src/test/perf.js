@@ -49,7 +49,7 @@ describe('XML benchmark', () => {
       });
     });
   });
-}, {targetRme: 0.002});
+}, {warmupIterationCount: 10_000, targetRme: 0.002});
 
 describe('HTML benchmark', () => {
   values.forEach((value) => {
@@ -68,4 +68,4 @@ describe('HTML benchmark', () => {
       });
     });
   });
-}, {targetRme: 0.002});
+}, {warmupIterationCount: 10_000, targetRme: 0.002});
