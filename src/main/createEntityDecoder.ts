@@ -50,41 +50,36 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
 
     const inputLength = input.length;
 
-    while (charIndex < inputLength) {
+    while (charIndex < inputLength - 1) {
 
       let startIndex = input.indexOf('&', charIndex);
       if (startIndex === -1) {
         break;
       }
 
-      charIndex = startIndex;
+      charIndex = startIndex++;
 
       let entityValue;
       let endIndex;
 
       // Numeric character reference
-      if (input.charCodeAt(++startIndex) === 35 /* # */) {
+      if (startIndex < inputLength - 2 && input.charCodeAt(startIndex) === 35 /* # */) {
 
-        const radixCharCode = input.charCodeAt(++startIndex);
-
-        let charCode;
-        let digitCount = 0;
+        let charCode = 0;
         let codePoint = 0;
 
-        if (radixCharCode === 120 /* x */ || radixCharCode === 88 /* X */) {
+        if ((input.charCodeAt(++startIndex) | 32) === 120 /* x */) {
           endIndex = ++startIndex;
 
-          // Parse hexadecimal
-          while (digitCount < 6 && endIndex < inputLength) {
-            charCode = input.charCodeAt(endIndex);
+          // parseInt of a hexadecimal number
+          while (endIndex - startIndex < 6 && endIndex < inputLength) {
 
-            if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */) {
-              codePoint = codePoint * 16 + (charCode - (charCode & 0b1110000));
-              ++digitCount;
-              ++endIndex;
-            } else if (charCode >= 97 /* a */ && charCode <= 102 /* f */ || charCode >= 65 /* A */ && charCode <= 70 /* F */) {
-              codePoint = codePoint * 16 + (charCode - (charCode & 0b1110000)) + 9;
-              ++digitCount;
+            // Convert alpha to lower case
+            charCode = input.charCodeAt(endIndex) | 32;
+
+            if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */ || charCode >= 97 /* a */ && charCode <= 102 /* f */) {
+              // Convert "0" → 0 and "f" → 15
+              codePoint = codePoint * 16 + charCode - (charCode & 112) + (charCode >> 6) * 9;
               ++endIndex;
             } else {
               break;
@@ -94,23 +89,21 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
         } else {
           endIndex = startIndex;
 
-          // Parse decimal
-          while (digitCount < 6 && endIndex < inputLength) {
-            charCode = input.charCodeAt(endIndex);
+          // parseInt of a decimal number
+          while (endIndex - startIndex < 6 && endIndex < inputLength) {
+            charCode = input.charCodeAt(endIndex) | 0;
 
             if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */) {
-              codePoint = codePoint * 10 + (charCode - (charCode & 0b1110000));
-              ++digitCount;
+              codePoint = codePoint * 10 + charCode - (charCode & 112);
               ++endIndex;
             } else {
               break;
             }
           }
-
         }
 
-        if (digitCount >= 2) {
-          const terminated = input.charCodeAt(endIndex) === 59 /* ; */;
+        if (endIndex - startIndex >= 2) {
+          const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
 
           if (terminated || !numericCharacterReferenceTerminated) {
             entityValue = fromCodePoint(codePoint, replacementChar, illegalCodePointsForbidden);
@@ -129,7 +122,7 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
         if (entity != null) {
           endIndex += entity.name.length;
 
-          const terminated = input.charCodeAt(endIndex) === 59 /* ; */;
+          const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
 
           if (terminated) {
             ++endIndex;
