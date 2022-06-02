@@ -19,7 +19,7 @@ export function fromCodePoint(codePoint: number, replacementChar: string, illega
   if (codePoint === 0 || codePoint >= 128 && codePoint <= 159) {
     const overrideChar = overridesMap[codePoint];
 
-    if (overrideChar != null) {
+    if (overrideChar !== undefined) {
       if (illegalCodePointsForbidden) {
         die('Disallowed character reference');
       }
@@ -31,7 +31,7 @@ export function fromCodePoint(codePoint: number, replacementChar: string, illega
   }
   if (codePoint > 0xffff) {
     codePoint -= 0x10000;
-    return fromCharCode(codePoint >>> 10 & 0x3ff | 0xd800) + fromCharCode(0xdc00 | codePoint & 0x3ff);
+    return fromCharCode(codePoint >>> 10 & 0x3ff | 0xd800, 0xdc00 | codePoint & 0x3ff);
   }
   return fromCharCode(codePoint);
 }

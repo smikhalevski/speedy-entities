@@ -1,7 +1,5 @@
 import {EntityManager} from './EntityManager';
 
-// const entityRe = /[\t\n!-,./:-@[-`\f{-}$\x80-\uFFFF]/g;
-
 export function createEntityEncoder(entityManager: EntityManager): (input: string) => string {
   return function entityEncoder(input) {
 
@@ -17,12 +15,12 @@ export function createEntityEncoder(entityManager: EntityManager): (input: strin
 
       str += input.substring(prevIndex, index);
 
-      const entityNode = entityManager.getByValue(input, index);
+      const entityTrie = entityManager.getByValue(input, index);
 
       // Named entity
-      if (entityNode != null) {
-        str += entityNode.value;
-        prevIndex = index + entityNode.charCount;
+      if (entityTrie !== undefined) {
+        str += entityTrie.value;
+        prevIndex = index + entityTrie.length;
       } else {
         const charCode = input.charCodeAt(index);
         const codePoint = input.codePointAt(index) || charCode;

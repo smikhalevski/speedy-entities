@@ -15,4 +15,4 @@ export const htmlEntityManager = new EntityManager();
 htmlEntityManager.setAll(htmlEntities);
 htmlEntityManager.setAll(legacyHtmlEntities, true);
 
-export const decodeHtml = createEntityDecoder(htmlEntityManager);
+export const decodeHtml = createEntityDecoder({entityManager: htmlEntityManager});

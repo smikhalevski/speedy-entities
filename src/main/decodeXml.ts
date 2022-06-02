@@ -19,4 +19,7 @@ xmlEntityManager.setAll(xmlEntities);
 /**
  * Decodes XML entities in a string.
  */
-export const decodeXml = createEntityDecoder(xmlEntityManager, {numericCharacterReferenceTerminated: true});
+export const decodeXml = createEntityDecoder({
+  entityManager: xmlEntityManager,
+  numericCharacterReferenceTerminated: true,
+});

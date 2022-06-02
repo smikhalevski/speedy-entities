@@ -4,14 +4,21 @@ import {fromCodePoint} from './fromCodePoint';
 export interface IEntityDecoderOptions {
 
   /**
-   * If `true` then numeric character references must be terminated with a semicolon.
+   * An entity manager that defines named entities.
+   */
+  entityManager?: EntityManager;
+
+  /**
+   * If `true` then numeric character references must be terminated with a semicolon to be decoded. Otherwise, numeric
+   * character references are recognized even if they are not terminated with a semicolon.
    *
    * @default false
    */
   numericCharacterReferenceTerminated?: boolean;
 
   /**
-   * If `true` then an error is thrown when an illegal code point is met.
+   * If `true` then an error is thrown when an illegal code point is met. Otherwise, a {@link replacementChar} would be
+   * used instead.
    *
    * @default false
    * @see {@link https://en.wikipedia.org/wiki/Valid_characters_in_XML Valid characters in XML on Wikipedia}
@@ -29,13 +36,14 @@ export interface IEntityDecoderOptions {
 /**
  * Creates an entity decoder that rewrites numeric and named entities found in input to their respective values.
  *
- * @param entityManager An entity manager that defines named entities.
  * @param options The decoder options.
+ * @returns A function that decodes entities in the string.
  */
-export function createEntityDecoder(entityManager: EntityManager, options?: IEntityDecoderOptions): (input: string) => string {
+export function createEntityDecoder(options?: IEntityDecoderOptions): (input: string) => string {
   options ||= {};
 
   const {
+    entityManager = null,
     numericCharacterReferenceTerminated = false,
     illegalCodePointsForbidden = false,
     replacementChar = '\ufffd',
@@ -43,7 +51,7 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
 
   return function entityDecoder(input) {
 
-    let output = '';
+    let output: string | null = null;
 
     let textIndex = 0;
     let charIndex = 0;
@@ -59,8 +67,8 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
 
       charIndex = startIndex++;
 
-      let entityValue: string | undefined;
-      let endIndex;
+      let entityValue: string | null = null;
+      let endIndex = startIndex;
 
       // Numeric character reference
       if (startIndex < inputLength - 2 && input.charCodeAt(startIndex) === 35 /* # */) {
@@ -113,13 +121,12 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
           }
         }
 
-      } else {
+      } else if (entityManager !== null) {
         // Named character reference
-        endIndex = startIndex;
 
         const entity = entityManager.getByName(input, startIndex);
 
-        if (entity != null) {
+        if (entity !== undefined) {
           endIndex += entity.name.length;
 
           const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
@@ -133,19 +140,15 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
         }
       }
 
-      if (entityValue != null) {
-        output += textIndex !== charIndex ? input.substring(textIndex, charIndex) + entityValue : entityValue;
+      // Concat decoded entity and preceding substring
+      if (entityValue !== null) {
+        const str = textIndex === charIndex ? entityValue : input.substring(textIndex, charIndex) + entityValue;
+        output = output === null ? str : output + str;
         textIndex = endIndex;
       }
 
       charIndex = endIndex;
     }
-    if (textIndex === 0) {
-      return input;
-    }
-    if (textIndex !== inputLength) {
-      output += input.substring(textIndex);
-    }
-    return output;
+    return output === null ? input : textIndex === inputLength ? output : output + input.substring(textIndex);
   };
 }

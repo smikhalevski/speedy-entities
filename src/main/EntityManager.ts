@@ -1,4 +1,4 @@
-import {createTrieNode, ITrieNode, searchTrie, setTrie} from '@smikhalevski/trie';
+import {Trie, trieCreate, trieSearch, trieSet} from '@smikhalevski/trie';
 
 export interface IEntity {
   name: string,
@@ -8,8 +8,8 @@ export interface IEntity {
 
 export class EntityManager {
 
-  private _decodeTrie = createTrieNode<IEntity>();
-  private _encodeTrie = createTrieNode<string>();
+  private _decodeTrie = trieCreate<IEntity>();
+  private _encodeTrie = trieCreate<string>();
   private _chars = new Set<number>();
 
   /**
@@ -20,8 +20,8 @@ export class EntityManager {
    * @param legacy If `true` then entity reference doesn't require a trailing semicolon.
    */
   set(name: string, value: string, legacy?: boolean): void {
-    setTrie(this._decodeTrie, name, {name, value, legacy: legacy || false});
-    setTrie(this._encodeTrie, value, '&' + name + ';');
+    trieSet(this._decodeTrie, name, {name, value, legacy: legacy || false});
+    trieSet(this._encodeTrie, value, '&' + name + ';');
     this._chars.add(value.charCodeAt(0));
   }
 
@@ -53,14 +53,14 @@ export class EntityManager {
    * @param offset The offset in the `input` to start searching from.
    */
   getByName(input: string, offset: number): IEntity | undefined {
-    return searchTrie(this._decodeTrie, input, offset)?.value;
+    return trieSearch(this._decodeTrie, input, offset)?.value;
   }
 
   getRe(): RegExp {
     return new RegExp('[\\t\\n!-,./:-@[-`\\f{-}$\\x80-\\uFFFF' + Array.from(this._chars).map((char) => '\\u' + char.toString(16).padStart(4, '0')).join('') + ']', 'g');
   }
 
-  getByValue(input: string, offset: number): ITrieNode<string> | undefined {
-    return searchTrie(this._encodeTrie, input, offset);
+  getByValue(input: string, offset: number): Trie<string> | undefined {
+    return trieSearch(this._encodeTrie, input, offset) || undefined;
   }
 }

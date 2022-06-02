@@ -8,7 +8,7 @@ describe('createEntityDecoder', () => {
     entityManager.set('foo', 'okay');
     entityManager.set('bar', 'nope', true);
 
-    const decode = createEntityDecoder(entityManager);
+    const decode = createEntityDecoder({entityManager});
 
     expect(decode('&foo;')).toBe('okay');
     expect(decode('&bar')).toBe('nope');
@@ -19,7 +19,7 @@ describe('createEntityDecoder', () => {
   });
 
   test('supports numeric entities', () => {
-    const decode = createEntityDecoder(new EntityManager());
+    const decode = createEntityDecoder({entityManager: new EntityManager()});
 
     expect(decode('&#X61;&#x62;&#x63;')).toBe('abc');
   });
