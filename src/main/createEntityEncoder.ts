@@ -20,7 +20,7 @@ export function createEntityEncoder(entityManager: EntityManager): (input: strin
       // Named entity
       if (entityTrie !== undefined) {
         str += entityTrie.value;
-        prevIndex = index + entityTrie.length;
+        prevIndex = index + entityTrie.value!.length;
       } else {
         const charCode = input.charCodeAt(index);
         const codePoint = input.codePointAt(index) || charCode;

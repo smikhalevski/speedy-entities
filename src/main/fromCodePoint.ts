@@ -3,7 +3,11 @@ import overridesData from './gen/overrides.json';
 import {unpackMap} from './unpackMap';
 import {die, fromCharCode} from './misc';
 
-const overridesMap = unpackMap(overridesData);
+const overridesMap: Record<number, string> = {};
+
+unpackMap(overridesData).forEach((key, value) => {
+  overridesMap[parseInt(key)] = value;
+});
 
 /**
  * @see https://github.com/mathiasbynens/he/blob/master/data/decode-map-overrides.json

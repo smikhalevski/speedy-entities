@@ -31,7 +31,7 @@ export class EntityManager {
    * @param entities The map from an entity name to a value.
    * @param legacy If `true` then entity reference doesn't require a trailing semicolon.
    */
-  setAll(entities: Record<string, string>, legacy?: boolean): void {
+  setAll(entities: Map<string, string> | Record<string, string>, legacy?: boolean): void {
     for (const [name, value] of Object.entries(entities)) {
       this.set(name, value, legacy);
     }
