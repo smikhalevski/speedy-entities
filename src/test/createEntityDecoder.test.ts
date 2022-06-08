@@ -1,14 +1,14 @@
-import {createEntityDecoder, EntityManager} from '../main';
+import {createEntityDecoder, NamedCharacterReferenceManager} from '../main';
 
 describe('createEntityDecoder', () => {
 
   test('supports arbitrary named entities', () => {
-    const entityManager = new EntityManager();
+    const entityManager = new NamedCharacterReferenceManager();
 
     entityManager.set('foo', 'okay');
     entityManager.set('bar', 'nope', true);
 
-    const decode = createEntityDecoder({entityManager});
+    const decode = createEntityDecoder({namedCharacterReferenceManager: entityManager});
 
     expect(decode('&foo;')).toBe('okay');
     expect(decode('&bar')).toBe('nope');
@@ -19,7 +19,7 @@ describe('createEntityDecoder', () => {
   });
 
   test('supports numeric entities', () => {
-    const decode = createEntityDecoder({entityManager: new EntityManager()});
+    const decode = createEntityDecoder({namedCharacterReferenceManager: new NamedCharacterReferenceManager()});
 
     expect(decode('&#X61;&#x62;&#x63;')).toBe('abc');
   });

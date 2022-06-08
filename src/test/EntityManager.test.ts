@@ -1,17 +1,17 @@
-import {EntityManager, IEntity} from '../main';
+import {NamedCharacterReferenceManager, IEntity} from '../main';
 
 describe('EntityManager', () => {
 
-  let manager: EntityManager;
+  let manager: NamedCharacterReferenceManager;
 
   beforeEach(() => {
-    manager = new EntityManager();
+    manager = new NamedCharacterReferenceManager();
   });
 
   test('searches for a previously added entity', () => {
     manager.set('foo', 'bar');
 
-    expect(manager.getByName('foo', 0)).toEqual(<IEntity>{
+    expect(manager.decodeAt('foo', 0)).toEqual(<IEntity>{
       name: 'foo',
       value: 'bar',
       legacy: false,
@@ -21,13 +21,13 @@ describe('EntityManager', () => {
   test('can add multiple entities', () => {
     manager.setAll({foo: '123', bar: 'abc'}, true);
 
-    expect(manager.getByName('__foo__', 2)).toEqual(<IEntity>{
+    expect(manager.decodeAt('__foo__', 2)).toEqual(<IEntity>{
       name: 'foo',
       value: '123',
       legacy: true,
     });
 
-    expect(manager.getByName('bar', 0)).toEqual(<IEntity>{
+    expect(manager.decodeAt('bar', 0)).toEqual(<IEntity>{
       name: 'bar',
       value: 'abc',
       legacy: true,

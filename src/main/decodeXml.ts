@@ -1,25 +1,13 @@
+import xmlEntitiesData from './gen/xml-entities.json';
 import {createEntityDecoder} from './createEntityDecoder';
-import {EntityManager} from './EntityManager';
+import {unpackMap} from './unpackMap';
 
-export const xmlEntities: Record<string, string> = {
-  amp: '&',
-  apos: '\'',
-  gt: '>',
-  lt: '<',
-  quot: '"',
-};
-
-/**
- * An entity manager that supports XML entities.
- */
-export const xmlEntityManager = new EntityManager();
-
-xmlEntityManager.setAll(xmlEntities);
+export const xmlNamedCharacterReferences = unpackMap(xmlEntitiesData);
 
 /**
  * Decodes XML entities in a string.
  */
 export const decodeXml = createEntityDecoder({
-  entityManager: xmlEntityManager,
+  namedCharacterReferences: xmlNamedCharacterReferences,
   numericCharacterReferenceTerminated: true,
 });

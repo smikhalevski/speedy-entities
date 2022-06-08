@@ -1,12 +1,20 @@
-import {EntityManager} from './EntityManager';
 import {fromCodePoint} from './fromCodePoint';
+import {Trie, trieCreate, trieSearch, trieSet} from '@smikhalevski/trie';
+
+interface INamedCharacterReference {
+  name: string;
+  value: string;
+  legacy: boolean;
+}
 
 export interface IEntityDecoderOptions {
 
   /**
    * An entity manager that defines named entities.
    */
-  entityManager?: EntityManager;
+  namedCharacterReferences?: Map<string, string>;
+
+  legacyNamedCharacterReferences?: Map<string, string>;
 
   /**
    * If `true` then numeric character references must be terminated with a semicolon to be decoded. Otherwise, numeric
@@ -39,17 +47,26 @@ export interface IEntityDecoderOptions {
  * @param options The decoder options.
  * @returns A function that decodes entities in the string.
  */
-export function createEntityDecoder(options?: IEntityDecoderOptions): (input: string) => string {
-  options ||= {};
+export function createEntityDecoder(options: IEntityDecoderOptions = {}): (input: string) => string {
 
   const {
-    entityManager = null,
+    namedCharacterReferences = null,
+    legacyNamedCharacterReferences = null,
     numericCharacterReferenceTerminated = false,
     illegalCodePointsForbidden = false,
     replacementChar = '\ufffd',
   } = options;
 
-  return function entityDecoder(input) {
+  let characterReferenceTrie: Trie<INamedCharacterReference> | undefined;
+
+  if (namedCharacterReferences != null) {
+    characterReferenceTrie = populateTrieFromMap(namedCharacterReferences, false);
+  }
+  if (legacyNamedCharacterReferences != null) {
+    characterReferenceTrie = populateTrieFromMap(legacyNamedCharacterReferences, false, characterReferenceTrie);
+  }
+
+  return (input) => {
 
     let output: string | null = null;
 
@@ -67,7 +84,7 @@ export function createEntityDecoder(options?: IEntityDecoderOptions): (input: st
 
       charIndex = startIndex++;
 
-      let entityValue: string | null = null;
+      let characterReferenceValue: string | null = null;
       let endIndex = startIndex;
 
       // Numeric character reference
@@ -114,35 +131,37 @@ export function createEntityDecoder(options?: IEntityDecoderOptions): (input: st
           const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
 
           if (terminated || !numericCharacterReferenceTerminated) {
-            entityValue = fromCodePoint(codePoint, replacementChar, illegalCodePointsForbidden);
+            characterReferenceValue = fromCodePoint(codePoint, replacementChar, illegalCodePointsForbidden);
           }
           if (terminated) {
             ++endIndex;
           }
         }
 
-      } else if (entityManager !== null) {
+      } else if (characterReferenceTrie != null) {
         // Named character reference
 
-        const entity = entityManager.getByName(input, startIndex);
+        const trie = trieSearch(characterReferenceTrie, input, startIndex);
 
-        if (entity !== undefined) {
-          endIndex += entity.name.length;
+        if (trie !== undefined) {
+          const namedCharacterReference = trie.value!;
+
+          endIndex += namedCharacterReference.name.length;
 
           const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
 
+          if (terminated || namedCharacterReference.legacy) {
+            characterReferenceValue = namedCharacterReference.value;
+          }
           if (terminated) {
             ++endIndex;
-          }
-          if (terminated || entity.legacy) {
-            entityValue = entity.value;
           }
         }
       }
 
       // Concat decoded entity and preceding substring
-      if (entityValue !== null) {
-        const str = textIndex === charIndex ? entityValue : input.substring(textIndex, charIndex) + entityValue;
+      if (characterReferenceValue !== null) {
+        const str = textIndex === charIndex ? characterReferenceValue : input.substring(textIndex, charIndex) + characterReferenceValue;
         output = output === null ? str : output + str;
         textIndex = endIndex;
       }
@@ -151,4 +170,11 @@ export function createEntityDecoder(options?: IEntityDecoderOptions): (input: st
     }
     return output === null ? input : textIndex === inputLength ? output : output + input.substring(textIndex);
   };
+}
+
+function populateTrieFromMap(map: Map<string, string>, legacy: boolean, trie = trieCreate<INamedCharacterReference>()): Trie<INamedCharacterReference> {
+  map.forEach((value, name) => {
+    trieSet(trie, name, {name, value, legacy});
+  });
+  return trie;
 }

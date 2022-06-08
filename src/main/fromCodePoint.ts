@@ -3,6 +3,8 @@ import overridesData from './gen/overrides.json';
 import {unpackMap} from './unpackMap';
 import {die, fromCharCode} from './misc';
 
+const illegalCodePointsSet = new Set(illegalCodePoints);
+
 const overridesMap: Record<number, string> = {};
 
 unpackMap(overridesData).forEach((key, value) => {
@@ -30,7 +32,7 @@ export function fromCodePoint(codePoint: number, replacementChar: string, illega
       return overrideChar;
     }
   }
-  if (illegalCodePointsForbidden && illegalCodePoints.includes(codePoint)) {
+  if (illegalCodePointsForbidden && illegalCodePointsSet.has(codePoint)) {
     die('Disallowed character reference');
   }
   if (codePoint > 0xffff) {

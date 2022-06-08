@@ -1,9 +1,9 @@
-import {createEntityEncoder, EntityManager} from '../main';
+import {createEntityEncoder, NamedCharacterReferenceManager} from '../main';
 
 describe('createEntityEncoder', () => {
 
   test('supports arbitrary named entities', () => {
-    const entityManager = new EntityManager();
+    const entityManager = new NamedCharacterReferenceManager();
 
     entityManager.set('foo', 'okay');
     entityManager.set('bar', 'nope', true);
@@ -16,7 +16,7 @@ describe('createEntityEncoder', () => {
   });
 
   test('supports numeric entities', () => {
-    const encode = createEntityEncoder(new EntityManager());
+    const encode = createEntityEncoder(new NamedCharacterReferenceManager());
 
     expect(encode('&ÿü\'')).toBe('&#38;&#255;&#252;&#39;');
   });

@@ -1,4 +1,4 @@
-import entitiesData from '../main/gen/entities.json';
+import entitiesData from '../main/gen/html-entities.json';
 import {unpackMap} from '../main/unpackMap';
 
 describe('unpackMap', () => {

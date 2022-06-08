@@ -1,6 +1,18 @@
-import {EntityManager} from './EntityManager';
 
-export function createEntityEncoder(entityManager: EntityManager): (input: string) => string {
+export interface IEntityEncoderOptions {
+
+  namedCharacterReferences?: Map<string, string>;
+
+  numericCharacterReferences?: Array<number | [number, number]>;
+}
+
+export function createEntityEncoder(options: IEntityEncoderOptions = {}): (input: string) => string {
+
+
+  // Compile RegExp from chars
+
+
+
   return function entityEncoder(input) {
 
     let str = '';
@@ -15,7 +27,7 @@ export function createEntityEncoder(entityManager: EntityManager): (input: strin
 
       str += input.substring(prevIndex, index);
 
-      const entityTrie = entityManager.getByValue(input, index);
+      const entityTrie = entityManager.encodeAt(input, index);
 
       // Named entity
       if (entityTrie !== undefined) {
