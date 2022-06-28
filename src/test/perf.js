@@ -1,39 +1,58 @@
 const {decodeXML, decodeHTML} = require('entities');
 const {decodeXml, decodeHtml} = require('../../lib/index-cjs');
 
-const values = [
+const numericCharacterReferencesTestData = [
   '&#X61;&#x62;&#x63;', // terminated hex
   '&#X61&#x62&#x63', // unterminated hex
   '&#97;&#98;&#99;', // terminated decimal
   '&#97&#98&#99', // unterminated decimal
+];
+
+const namedCharacterReferencesTestData = [
   '&amp;&lt;&gt;', // terminated XML/legacy
   '&amp&lt&gt', // unterminated XML/legacy
   '&NotNestedGreaterGreater;', // terminated non-legacy HTML
   '&NotNestedGreaterGreater', // unterminated non-legacy HTML
 ];
 
-describe('Average across ' + values.length + ' samples', () => {
+// describe('Average across ' + values.length + ' samples', () => {
+//
+//   test('speedy-entities', (measure) => {
+//     values.forEach((value) => {
+//       measure(() => {
+//         decodeXml(value);
+//       });
+//     });
+//   });
+//
+//   test('fb55/entities', (measure) => {
+//     values.forEach((value) => {
+//       measure(() => {
+//         decodeXML(value);
+//       });
+//     });
+//   });
+//
+// }, {warmupIterationCount: 1_000, targetRme: 0});
+
+describe('orig test', () => {
+  const textToDecode = `This is a simple text &uuml;ber &#x3f; something.`;
 
   test('speedy-entities', (measure) => {
-    values.forEach((value) => {
-      measure(() => {
-        decodeXml(value);
-      });
+    measure(() => {
+      decodeHtml(textToDecode);
     });
   });
 
   test('fb55/entities', (measure) => {
-    values.forEach((value) => {
-      measure(() => {
-        decodeXML(value);
-      });
+    measure(() => {
+      decodeHTML(textToDecode);
     });
   });
+}, {warmupIterationCount: 100, targetRme: 0.002});
 
-}, {warmupIterationCount: 1_000, targetRme: 0});
-
-describe('XML benchmark', () => {
-  values.forEach((value) => {
+describe('Numeric character references', () => {
+  numericCharacterReferencesTestData.forEach((value) => {
     describe(value, () => {
 
       test('speedy-entities', (measure) => {
@@ -49,10 +68,29 @@ describe('XML benchmark', () => {
       });
     });
   });
-}, {warmupIterationCount: 10_000, targetRme: 0.002});
+}, {warmupIterationCount: 100, targetRme: 0.002});
 
-describe('HTML benchmark', () => {
-  values.forEach((value) => {
+describe('XML named character references', () => {
+  namedCharacterReferencesTestData.forEach((value) => {
+    describe(value, () => {
+
+      test('speedy-entities', (measure) => {
+        measure(() => {
+          decodeXml(value);
+        });
+      });
+
+      test('fb55/entities', (measure) => {
+        measure(() => {
+          decodeXML(value);
+        });
+      });
+    });
+  });
+}, {warmupIterationCount: 100, targetRme: 0.002});
+
+describe('HTML named character references', () => {
+  namedCharacterReferencesTestData.forEach((value) => {
     describe(value, () => {
 
       test('speedy-entities', (measure) => {
@@ -68,4 +106,4 @@ describe('HTML benchmark', () => {
       });
     });
   });
-}, {warmupIterationCount: 10_000, targetRme: 0.002});
+}, {warmupIterationCount: 100, targetRme: 0.002});

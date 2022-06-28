@@ -1,20 +1,19 @@
 import {fromCodePoint} from './fromCodePoint';
 import {Trie, trieCreate, trieSearch, trieSet} from '@smikhalevski/trie';
 
-interface INamedCharacterReference {
-  name: string;
+interface NamedCharacterReference {
   value: string;
   legacy: boolean;
 }
 
-export interface IEntityDecoderOptions {
+export interface EntityDecoderOptions {
 
   /**
    * An entity manager that defines named entities.
    */
-  namedCharacterReferences?: Map<string, string>;
+  namedCharacterReferences?: Record<string, string>;
 
-  legacyNamedCharacterReferences?: Map<string, string>;
+  legacyNamedCharacterReferences?: Record<string, string>;
 
   /**
    * If `true` then numeric character references must be terminated with a semicolon to be decoded. Otherwise, numeric
@@ -47,24 +46,17 @@ export interface IEntityDecoderOptions {
  * @param options The decoder options.
  * @returns A function that decodes entities in the string.
  */
-export function createEntityDecoder(options: IEntityDecoderOptions = {}): (input: string) => string {
+export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
 
   const {
-    namedCharacterReferences = null,
-    legacyNamedCharacterReferences = null,
+    namedCharacterReferences,
+    legacyNamedCharacterReferences,
     numericCharacterReferenceTerminated = false,
     illegalCodePointsForbidden = false,
     replacementChar = '\ufffd',
   } = options;
 
-  let characterReferenceTrie: Trie<INamedCharacterReference> | undefined;
-
-  if (namedCharacterReferences != null) {
-    characterReferenceTrie = populateTrieFromMap(namedCharacterReferences, false);
-  }
-  if (legacyNamedCharacterReferences != null) {
-    characterReferenceTrie = populateTrieFromMap(legacyNamedCharacterReferences, false, characterReferenceTrie);
-  }
+  const characterReferenceTrie = appendCharacterReferences(legacyNamedCharacterReferences, true, appendCharacterReferences(namedCharacterReferences, false, null));
 
   return (input) => {
 
@@ -87,8 +79,8 @@ export function createEntityDecoder(options: IEntityDecoderOptions = {}): (input
       let characterReferenceValue: string | null = null;
       let endIndex = startIndex;
 
-      // Numeric character reference
       if (startIndex < inputLength - 2 && input.charCodeAt(startIndex) === 35 /* # */) {
+        // Numeric character reference
 
         let charCode = 0;
         let codePoint = 0;
@@ -138,15 +130,15 @@ export function createEntityDecoder(options: IEntityDecoderOptions = {}): (input
           }
         }
 
-      } else if (characterReferenceTrie != null) {
+      } else if (characterReferenceTrie !== null) {
         // Named character reference
 
         const trie = trieSearch(characterReferenceTrie, input, startIndex);
 
-        if (trie !== undefined) {
+        if (trie !== null) {
           const namedCharacterReference = trie.value!;
 
-          endIndex += namedCharacterReference.name.length;
+          endIndex += trie.key!.length;
 
           const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
 
@@ -172,9 +164,20 @@ export function createEntityDecoder(options: IEntityDecoderOptions = {}): (input
   };
 }
 
-function populateTrieFromMap(map: Map<string, string>, legacy: boolean, trie = trieCreate<INamedCharacterReference>()): Trie<INamedCharacterReference> {
-  map.forEach((value, name) => {
-    trieSet(trie, name, {name, value, legacy});
-  });
+function appendCharacterReferences(characterReferences: Record<string, string> | undefined, legacy: boolean, trie: Trie<NamedCharacterReference> | null): Trie<NamedCharacterReference> | null {
+  if (characterReferences == null) {
+    return trie;
+  }
+
+  const entries = Object.entries(characterReferences);
+  if (entries.length === 0) {
+    return trie;
+  }
+
+  trie ||= trieCreate();
+
+  for (const [key, value] of entries) {
+    trieSet(trie, key, {value, legacy});
+  }
   return trie;
 }

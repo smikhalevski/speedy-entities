@@ -1,8 +1,8 @@
 import xmlEntitiesData from './gen/xml-entities.json';
 import {createEntityDecoder} from './createEntityDecoder';
-import {unpackMap} from './unpackMap';
+import {unpackData} from './unpackData';
 
-export const xmlNamedCharacterReferences = unpackMap(xmlEntitiesData);
+export const xmlNamedCharacterReferences = unpackData(xmlEntitiesData);
 
 /**
  * Decodes XML entities in a string.

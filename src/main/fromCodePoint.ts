@@ -1,15 +1,15 @@
 import illegalCodePoints from './data/illegal-code-points.json';
 import overridesData from './gen/overrides.json';
-import {unpackMap} from './unpackMap';
-import {die, fromCharCode} from './misc';
+import {unpackData} from './unpackData';
+import {die, fromCharCode} from './utils';
 
 const illegalCodePointsSet = new Set(illegalCodePoints);
 
-const overridesMap: Record<number, string> = {};
+const overrides: Record<number, string> = {};
 
-unpackMap(overridesData).forEach((key, value) => {
-  overridesMap[parseInt(key)] = value;
-});
+for (const [key, value] of Object.entries(unpackData(overridesData))) {
+  overrides[parseInt(key)] = value;
+}
 
 /**
  * @see https://github.com/mathiasbynens/he/blob/master/data/decode-map-overrides.json
@@ -23,7 +23,7 @@ export function fromCodePoint(codePoint: number, replacementChar: string, illega
     return replacementChar;
   }
   if (codePoint === 0 || codePoint >= 128 && codePoint <= 159) {
-    const overrideChar = overridesMap[codePoint];
+    const overrideChar = overrides[codePoint];
 
     if (overrideChar !== undefined) {
       if (illegalCodePointsForbidden) {

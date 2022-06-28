@@ -1,49 +1,77 @@
+import {appendNumberOrRange, convertRangesToRegExp} from './utils';
+import {Trie, trieCreate, trieSearch, trieSet} from '../../../trie';
 
 export interface IEntityEncoderOptions {
 
-  namedCharacterReferences?: Map<string, string>;
+  namedCharacterReferences?: Record<string, string>;
 
   numericCharacterReferences?: Array<number | [number, number]>;
 }
 
 export function createEntityEncoder(options: IEntityEncoderOptions = {}): (input: string) => string {
 
+  const {
+    namedCharacterReferences,
+    numericCharacterReferences,
+  } = options;
 
-  // Compile RegExp from chars
+  let characterReferenceTrie: Trie<string> | null = null;
 
+  const ranges: [number, number][] = [];
 
+  if (namedCharacterReferences != null) {
+    characterReferenceTrie ||= trieCreate();
 
-  return function entityEncoder(input) {
+    for (const [key, value] of Object.entries(namedCharacterReferences)) {
+      trieSet(characterReferenceTrie, value, '&' + key + ';');
+      appendNumberOrRange(value.charCodeAt(0), ranges);
+    }
+  }
+  if (numericCharacterReferences != null) {
+    for (const characterReference of numericCharacterReferences) {
+      appendNumberOrRange(characterReference, ranges);
+    }
+  }
 
-    let str = '';
-    let prevIndex = 0;
+  if (ranges.length === 0) {
+    return (input) => input;
+  }
 
-    const entityRe = entityManager.getRe();
+  const re = convertRangesToRegExp(ranges);
 
-    entityRe.lastIndex = 0;
+  return (input) => {
 
-    while (entityRe.test(input)) {
-      const index = entityRe.lastIndex - 1;
+    let output = '';
+    let endIndex = 0;
 
-      str += input.substring(prevIndex, index);
+    re.lastIndex = 0;
 
-      const entityTrie = entityManager.encodeAt(input, index);
+    while (re.test(input)) {
+      const startIndex = re.lastIndex - 1;
 
-      // Named entity
-      if (entityTrie !== undefined) {
-        str += entityTrie.value;
-        prevIndex = index + entityTrie.value!.length;
-      } else {
-        const charCode = input.charCodeAt(index);
-        const codePoint = input.codePointAt(index) || charCode;
-
-        str += '&#' + codePoint + ';';
-        prevIndex = index + (codePoint !== charCode ? 2 : 1);
+      if (endIndex !== startIndex) {
+        output += input.substring(endIndex, startIndex);
       }
+
+      if (characterReferenceTrie !== null) {
+        const trie = trieSearch(characterReferenceTrie, input, startIndex);
+
+        if (trie !== null) {
+          // Named character reference
+
+          output += trie.value;
+          re.lastIndex = endIndex = startIndex + trie.key!.length;
+          continue;
+        }
+      }
+
+      // Numeric character reference
+      const codePoint = input.codePointAt(startIndex)!;
+
+      output += '&#' + codePoint + ';';
+      re.lastIndex = endIndex = startIndex + (codePoint > 0xffff ? 2 : 1);
     }
 
-    str += input.substring(prevIndex);
-
-    return str;
+    return endIndex === 0 ? input : endIndex !== input.length ? output : output + input.substring(endIndex);
   };
 }
