@@ -69,6 +69,8 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
     let output = '';
     let endIndex = 0;
 
+    const inputLength = input.length;
+
     re.lastIndex = 0;
 
     while (re.test(input)) {
@@ -93,7 +95,7 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
 
         if (v !== undefined) {
 
-          const trie = trieSearch(v, input, lastIndex);
+          const trie = trieSearch(v, input, lastIndex, inputLength);
           if (trie !== null) {
             // Named character reference
             output += trie.value;
@@ -108,6 +110,6 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
       endIndex = lastIndex;
     }
 
-    return endIndex === 0 ? input : endIndex !== input.length ? output : output + input.substring(endIndex);
+    return endIndex === 0 ? input : endIndex === inputLength ? output : output + input.substring(endIndex);
   };
 }
