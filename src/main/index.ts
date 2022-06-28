@@ -1,4 +1,4 @@
 export * from './createEntityDecoder';
 export * from './createEntityEncoder';
-export * from './decodeHtml';
-export * from './decodeXml';
+export * from './html';
+export * from './xml';

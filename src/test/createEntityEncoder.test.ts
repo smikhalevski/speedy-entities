@@ -4,10 +4,10 @@ describe('createEntityEncoder', () => {
 
   test('supports arbitrary named entities', () => {
     const encode = createEntityEncoder({
-      namedCharacterReferences: {
+      namedCharRefs: {
         foo: 'okay',
       },
-      numericCharacterReferences: [60],
+      numericCharRefs: [60],
     });
 
     expect(encode('abc')).toBe('abc');
@@ -17,7 +17,7 @@ describe('createEntityEncoder', () => {
 
   test('supports numeric entities', () => {
     const encode = createEntityEncoder({
-      numericCharacterReferences: [38, 255, 252, 39],
+      numericCharRefs: [38, 255, 252, 39],
     });
 
     expect(encode('&ÿü\'')).toBe('&#38;&#255;&#252;&#39;');

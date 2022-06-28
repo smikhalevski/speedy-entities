@@ -4,15 +4,14 @@ export function die(message: string): never {
 
 export const fromCharCode = String.fromCharCode;
 
-export function appendNumberOrRange(x: number | [number, number], ranges: Array<[number, number]>): void {
+export function appendNumberOrRange(x: string | number | [string | number, string | number], ranges: Array<[number, number]>): void {
   let x0, x1;
 
-  if (typeof x === 'number') {
-    x0 = x;
-    x1 = x;
+  if (typeof x === 'object') {
+    x0 = toCharCode(x[0]);
+    x1 = toCharCode(x[1]);
   } else {
-    x0 = x[0];
-    x1 = x[1];
+    x0 = x1 = toCharCode(x);
   }
 
   for (let i = 0; i < ranges.length; ++i) {
@@ -40,4 +39,8 @@ export function convertRangesToRegExp(ranges: [number, number][]): RegExp {
 
 function escapeUnicode(charCode: number): string {
   return '\\u' + charCode.toString(16).padStart(4, '0');
+}
+
+function toCharCode(value: number | string): number {
+  return typeof value === 'number' ? value : value.charCodeAt(0);
 }

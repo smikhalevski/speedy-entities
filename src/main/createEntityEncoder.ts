@@ -1,35 +1,35 @@
 import {appendNumberOrRange, convertRangesToRegExp} from './utils';
-import {Trie, trieCreate, trieSearch, trieSet} from '../../../trie';
+import {Trie, trieCreate, trieSearch, trieSet} from '@smikhalevski/trie';
 
 export interface IEntityEncoderOptions {
 
-  namedCharacterReferences?: Record<string, string>;
+  namedCharRefs?: Record<string, string>;
 
-  numericCharacterReferences?: Array<number | [number, number]>;
+  numericCharRefs?: Array<string | number | [string | number, string | number]>;
 }
 
 export function createEntityEncoder(options: IEntityEncoderOptions = {}): (input: string) => string {
 
   const {
-    namedCharacterReferences,
-    numericCharacterReferences,
+    namedCharRefs,
+    numericCharRefs,
   } = options;
 
-  let characterReferenceTrie: Trie<string> | null = null;
+  let charRefTrie: Trie<string> | null = null;
 
   const ranges: [number, number][] = [];
 
-  if (namedCharacterReferences != null) {
-    characterReferenceTrie ||= trieCreate();
+  if (namedCharRefs != null) {
+    charRefTrie ||= trieCreate();
 
-    for (const [key, value] of Object.entries(namedCharacterReferences)) {
-      trieSet(characterReferenceTrie, value, '&' + key + ';');
+    for (const [key, value] of Object.entries(namedCharRefs)) {
+      trieSet(charRefTrie, value, '&' + key + ';');
       appendNumberOrRange(value.charCodeAt(0), ranges);
     }
   }
-  if (numericCharacterReferences != null) {
-    for (const characterReference of numericCharacterReferences) {
-      appendNumberOrRange(characterReference, ranges);
+  if (numericCharRefs != null) {
+    for (const charRef of numericCharRefs) {
+      appendNumberOrRange(charRef, ranges);
     }
   }
 
@@ -53,8 +53,8 @@ export function createEntityEncoder(options: IEntityEncoderOptions = {}): (input
         output += input.substring(endIndex, startIndex);
       }
 
-      if (characterReferenceTrie !== null) {
-        const trie = trieSearch(characterReferenceTrie, input, startIndex);
+      if (charRefTrie !== null) {
+        const trie = trieSearch(charRefTrie, input, startIndex);
 
         if (trie !== null) {
           // Named character reference

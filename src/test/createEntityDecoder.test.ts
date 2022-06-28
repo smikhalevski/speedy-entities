@@ -5,8 +5,8 @@ describe('createEntityDecoder', () => {
   test('supports arbitrary named entities', () => {
 
     const decode = createEntityDecoder({
-      namedCharacterReferences: {foo: 'okay'},
-      legacyNamedCharacterReferences: {bar: 'nope'},
+      namedCharRefs: {foo: 'okay'},
+      legacyNamedCharRefs: {bar: 'nope'},
     });
 
     expect(decode('&foo;')).toBe('okay');

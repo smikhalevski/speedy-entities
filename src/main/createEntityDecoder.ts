@@ -1,7 +1,7 @@
 import {fromCodePoint} from './fromCodePoint';
 import {Trie, trieCreate, trieSearch, trieSet} from '@smikhalevski/trie';
 
-interface NamedCharacterReference {
+interface NamedCharRef {
   value: string;
   legacy: boolean;
 }
@@ -11,9 +11,9 @@ export interface EntityDecoderOptions {
   /**
    * An entity manager that defines named entities.
    */
-  namedCharacterReferences?: Record<string, string>;
+  namedCharRefs?: Record<string, string>;
 
-  legacyNamedCharacterReferences?: Record<string, string>;
+  legacyNamedCharRefs?: Record<string, string>;
 
   /**
    * If `true` then numeric character references must be terminated with a semicolon to be decoded. Otherwise, numeric
@@ -21,7 +21,7 @@ export interface EntityDecoderOptions {
    *
    * @default false
    */
-  numericCharacterReferenceTerminated?: boolean;
+  numericCharRefTerminated?: boolean;
 
   /**
    * If `true` then an error is thrown when an illegal code point is met. Otherwise, a {@link replacementChar} would be
@@ -49,14 +49,14 @@ export interface EntityDecoderOptions {
 export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
 
   const {
-    namedCharacterReferences,
-    legacyNamedCharacterReferences,
-    numericCharacterReferenceTerminated = false,
+    namedCharRefs,
+    legacyNamedCharRefs,
+    numericCharRefTerminated = false,
     illegalCodePointsForbidden = false,
     replacementChar = '\ufffd',
   } = options;
 
-  const characterReferenceTrie = appendCharacterReferences(legacyNamedCharacterReferences, true, appendCharacterReferences(namedCharacterReferences, false, null));
+  const charRefTrie = appendCharRefs(legacyNamedCharRefs, true, appendCharRefs(namedCharRefs, false, null));
 
   return (input) => {
 
@@ -76,7 +76,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
       charIndex = startIndex++;
 
-      let characterReferenceValue: string | null = null;
+      let charRefValue: string | null = null;
       let endIndex = startIndex;
 
       if (startIndex < inputLength - 2 && input.charCodeAt(startIndex) === 35 /* # */) {
@@ -122,28 +122,28 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
         if (endIndex - startIndex >= 2) {
           const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
 
-          if (terminated || !numericCharacterReferenceTerminated) {
-            characterReferenceValue = fromCodePoint(codePoint, replacementChar, illegalCodePointsForbidden);
+          if (terminated || !numericCharRefTerminated) {
+            charRefValue = fromCodePoint(codePoint, replacementChar, illegalCodePointsForbidden);
           }
           if (terminated) {
             ++endIndex;
           }
         }
 
-      } else if (characterReferenceTrie !== null) {
+      } else if (charRefTrie !== null) {
         // Named character reference
 
-        const trie = trieSearch(characterReferenceTrie, input, startIndex);
+        const trie = trieSearch(charRefTrie, input, startIndex);
 
         if (trie !== null) {
-          const namedCharacterReference = trie.value!;
+          const namedCharRef = trie.value!;
 
           endIndex += trie.key!.length;
 
           const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
 
-          if (terminated || namedCharacterReference.legacy) {
-            characterReferenceValue = namedCharacterReference.value;
+          if (terminated || namedCharRef.legacy) {
+            charRefValue = namedCharRef.value;
           }
           if (terminated) {
             ++endIndex;
@@ -152,8 +152,8 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
       }
 
       // Concat decoded entity and preceding substring
-      if (characterReferenceValue !== null) {
-        const str = textIndex === charIndex ? characterReferenceValue : input.substring(textIndex, charIndex) + characterReferenceValue;
+      if (charRefValue !== null) {
+        const str = textIndex === charIndex ? charRefValue : input.substring(textIndex, charIndex) + charRefValue;
         output = output === null ? str : output + str;
         textIndex = endIndex;
       }
@@ -164,12 +164,12 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
   };
 }
 
-function appendCharacterReferences(characterReferences: Record<string, string> | undefined, legacy: boolean, trie: Trie<NamedCharacterReference> | null): Trie<NamedCharacterReference> | null {
-  if (characterReferences == null) {
+function appendCharRefs(charRefs: Record<string, string> | undefined, legacy: boolean, trie: Trie<NamedCharRef> | null): Trie<NamedCharRef> | null {
+  if (charRefs == null) {
     return trie;
   }
 
-  const entries = Object.entries(characterReferences);
+  const entries = Object.entries(charRefs);
   if (entries.length === 0) {
     return trie;
   }
