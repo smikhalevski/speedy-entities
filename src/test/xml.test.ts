@@ -1,4 +1,4 @@
-import {decodeXml} from '../main';
+import {decodeXml, encodeXml} from '../main';
 
 describe('decodeXml', () => {
 
@@ -63,5 +63,20 @@ describe('decodeXml', () => {
     expect(decodeXml('&amp&lt&gt')).toBe('&amp&lt&gt');
     expect(decodeXml('&NotNestedGreaterGreater;')).toBe('&NotNestedGreaterGreater;');
     expect(decodeXml('&NotNestedGreaterGreater')).toBe('&NotNestedGreaterGreater');
+  });
+});
+
+describe('encodeXml', () => {
+
+  test('encodes to names character references', () => {
+    expect(encodeXml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
+  });
+
+  test('does not encode UTF code points', () => {
+    expect(encodeXml('\u2269\uFE00')).toBe('\u2269\uFE00');
+  });
+
+  test('does not encode ASCII', () => {
+    expect(encodeXml('abc')).toBe('abc');
   });
 });

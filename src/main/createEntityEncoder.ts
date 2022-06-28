@@ -15,7 +15,7 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
     numericCharRefs,
   } = options;
 
-  let charRefMap: Map<number, string | Trie<string>> | null = null;
+  let replaceMap: Map<number, string | Trie<string>> | null = null;
   const ranges: [number, number][] = [];
 
   if (namedCharRefs != null) {
@@ -24,13 +24,13 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
       const charRef = '&' + key + ';';
       const charCode = value.charCodeAt(0);
 
-      charRefMap ||= new Map<number, string | Trie<string>>();
+      replaceMap ||= new Map<number, string | Trie<string>>();
 
-      const q = charRefMap.get(charCode);
+      const q = replaceMap.get(charCode);
 
       if (value.length === 1) {
         if (q === undefined || typeof q === 'string') {
-          charRefMap.set(charCode, charRef);
+          replaceMap.set(charCode, charRef);
         } else {
           trieSet(q, '', charRef);
         }
@@ -42,7 +42,7 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
           if (typeof q === 'string') {
             trieSet(trie, '', q);
           }
-          charRefMap.set(charCode, trie);
+          replaceMap.set(charCode, trie);
         } else {
           trieSet(q, value.substring(1), charRef);
         }
@@ -83,19 +83,18 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
 
       const charCode = input.charCodeAt(startIndex);
 
-      if (charRefMap !== null) {
-        const v = charRefMap.get(charCode);
+      if (replaceMap !== null) {
+        const replacement = replaceMap.get(charCode);
 
-        if (typeof v === 'string') {
-          // Named character reference that corresponds to a single UTF char
-          output += v;
+        if (typeof replacement === 'string') {
+          // Named character reference
+          output += replacement;
           endIndex = lastIndex;
           continue;
         }
 
-        if (v !== undefined) {
-
-          const trie = trieSearch(v, input, lastIndex, inputLength);
+        if (replacement !== undefined) {
+          const trie = trieSearch(replacement, input, lastIndex, inputLength);
           if (trie !== null) {
             // Named character reference
             output += trie.value;

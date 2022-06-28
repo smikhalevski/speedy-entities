@@ -1,4 +1,4 @@
-import {decodeHtml, encodeHtml} from '../main';
+import {decodeHtml, encodeHtml, encodeXml} from '../main';
 
 describe('decodeHtml', () => {
 
@@ -78,15 +78,15 @@ describe('decodeHtml', () => {
 describe('encodeHtml', () => {
 
   test('encodes chars', () => {
-    expect(encodeHtml('<>&')).toBe('&lt;&gt;&amp;');
+    expect(encodeXml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
   });
 
   test('encodes code points', () => {
     expect(encodeHtml('\u2269\uFE00')).toBe('&gvnE;');
-    // expect(encodeHtml('\u2269')).toBe('&gneqq;');
+    expect(encodeHtml('\u2269')).toBe('&gneqq;');
   });
 
-  test('preserves non matching characters as is', () => {
-    expect(encodeHtml('aaa')).toBe('aaa');
+  test('does not encode ASCII', () => {
+    expect(encodeXml('abc')).toBe('abc');
   });
 });
