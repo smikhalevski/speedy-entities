@@ -1,4 +1,5 @@
-import {createEntityEncoder} from '../main';
+// noinspection ES6PreferShortImport
+import {createEntityEncoder} from '../main/createEntityEncoder';
 
 describe('createEntityEncoder', () => {
 

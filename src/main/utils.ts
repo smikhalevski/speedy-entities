@@ -32,7 +32,7 @@ export function convertRangesToRegExp(ranges: [number, number][]): RegExp {
   let pattern = '';
 
   for (const [x0, x1] of ranges) {
-    pattern += x0 === x1 ? escapeUnicode(x0) : escapeUnicode(x0) + '-' + escapeUnicode(x1);
+    pattern += x0 === x1 ? escapeUnicode(x0) : escapeUnicode(x0) + (Math.abs(x0 - x1) === 1 ? '' : '-') + escapeUnicode(x1);
   }
   return RegExp('[' + pattern + ']', 'g');
 }

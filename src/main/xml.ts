@@ -19,5 +19,4 @@ export const decodeXml = createEntityDecoder({
 
 export const encodeXml = createEntityEncoder({
   namedCharRefs: xmlNamedCharRefs,
-  numericCharRefs: ['&', '<', '>', '\'', '"'],
 });

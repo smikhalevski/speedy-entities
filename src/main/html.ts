@@ -13,6 +13,5 @@ export const decodeHtml = createEntityDecoder({
 });
 
 export const encodeHtml = createEntityEncoder({
-  namedCharRefs: Object.assign({}, htmlNamedCharRefs, legacyHtmlNamedCharRefs),
-  numericCharRefs: ['&', '<', '>', '\'', '"'],
+  namedCharRefs: Object.assign({}, legacyHtmlNamedCharRefs, htmlNamedCharRefs),
 });

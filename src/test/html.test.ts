@@ -1,4 +1,4 @@
-import {decodeHtml} from '../main';
+import {decodeHtml, encodeHtml} from '../main';
 
 describe('decodeHtml', () => {
 
@@ -72,5 +72,21 @@ describe('decodeHtml', () => {
     expect(decodeHtml('&amp&lt&gt')).toBe('&<>');
     expect(decodeHtml('&NotNestedGreaterGreater;')).toBe('\u2AA2\u0338');
     expect(decodeHtml('&NotNestedGreaterGreater')).toBe('&NotNestedGreaterGreater');
+  });
+});
+
+describe('encodeHtml', () => {
+
+  test('encodes chars', () => {
+    expect(encodeHtml('<>&')).toBe('&lt;&gt;&amp;');
+  });
+
+  test('encodes code points', () => {
+    expect(encodeHtml('\u2269\uFE00')).toBe('&gvnE;');
+    // expect(encodeHtml('\u2269')).toBe('&gneqq;');
+  });
+
+  test('preserves non matching characters as is', () => {
+    expect(encodeHtml('aaa')).toBe('aaa');
   });
 });
