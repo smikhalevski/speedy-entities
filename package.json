@@ -10,13 +10,13 @@
     "lib"
   ],
   "scripts": {
-    "build": "node encode-data.js && tsc && rimraf './lib/CharCode.*' && rollup --external @smikhalevski/trie --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-json",
-    "clean": "rimraf ./src/main/gen ./lib ./docs",
+    "build": "node pack-data.js && tsc && rimraf './lib/CharCode.*' && rollup --external @smikhalevski/trie --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-json",
+    "clean": "rimraf './src/main/gen' './lib' './docs'",
     "test": "jest --detectOpenHandles",
     "perf": "[ -d ./lib ] || npm run build && toofast ./src/test/perf.js",
     "docs": "typedoc ./src/main/index.ts",
     "publish-docs": "[ -d ./docs ] && [[ ! $(git status --porcelain) ]] && branch=$(git rev-parse --abbrev-ref HEAD) && sha=$(git rev-parse --short HEAD) && t=$(mktemp -d) && cp -R ./docs/ $t && git checkout ghpages && ls -A | grep -wv .git | xargs rm -rf && cp -R $t/ . && git add . && git commit -m \"Updated docs ($sha)\" && git push && git checkout $branch",
-    "release-docs": "npm run clean && node encode-data.js && npm run docs && npm run publish-docs"
+    "release-docs": "npm run clean && node pack-data.js && npm run docs && npm run publish-docs"
   },
   "repository": {
     "type": "git",
@@ -44,12 +44,12 @@
     "jest": "^27.5.1",
     "rimraf": "^3.0.2",
     "rollup": "^2.74.1",
-    "toofast": "^1.3.0",
+    "toofast": "^1.3.1",
     "ts-jest": "^27.1.3",
     "typedoc": "^0.22.15",
-    "typescript": "^4.6.2"
+    "typescript": "^4.7.2"
   },
   "dependencies": {
-    "@smikhalevski/trie": "^1.0.1"
+    "@smikhalevski/trie": "^2.0.0"
   }
 }

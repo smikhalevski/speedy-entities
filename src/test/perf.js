@@ -1,7 +1,8 @@
-const {decodeXML, decodeHTML} = require('entities');
-const {decodeXml, decodeHtml} = require('../../lib/index-cjs');
+const {encodeXML, encodeHTML, decodeXML, decodeHTML} = require('entities');
+const {encodeXml, encodeHtml, decodeXml, decodeHtml} = require('../../lib/index-cjs');
 
-const values = [
+const valuesToDecode = [
+  'abc', // ASCII text
   '&#X61;&#x62;&#x63;', // terminated hex
   '&#X61&#x62&#x63', // unterminated hex
   '&#97;&#98;&#99;', // terminated decimal
@@ -10,30 +11,54 @@ const values = [
   '&amp&lt&gt', // unterminated XML/legacy
   '&NotNestedGreaterGreater;', // terminated non-legacy HTML
   '&NotNestedGreaterGreater', // unterminated non-legacy HTML
+  '&NotNestedGreaterGreate', // unrecognized entity
 ];
 
-describe('Average across ' + values.length + ' samples', () => {
+const valuesToEncode = [
+  'abc', // ASCII text
+  '<>&', // numeric character reference
+  '\u00FF', // named character reference
+  '\u2269\uFE00', // code point, named character reference
+];
 
-  test('speedy-entities', (measure) => {
-    values.forEach((value) => {
-      measure(() => {
-        decodeXml(value);
-      });
-    });
-  });
+// describe('orig test', () => {
+//   const textToDecode = `This is a simple text &uuml;ber &#x3f; something.`;
+//
+//   test('speedy-entities', (measure) => {
+//     measure(() => {
+//       decodeHtml(textToDecode);
+//     });
+//   });
+//
+//   test('fb55/entities', (measure) => {
+//     measure(() => {
+//       decodeHTML(textToDecode);
+//     });
+//   });
+// }, {warmupIterationCount: 100, targetRme: 0.002});
 
-  test('fb55/entities', (measure) => {
-    values.forEach((value) => {
-      measure(() => {
-        decodeXML(value);
-      });
-    });
-  });
+// describe('Average across ' + values.length + ' samples', () => {
+//
+//   test('speedy-entities', (measure) => {
+//     values.forEach((value) => {
+//       measure(() => {
+//         decodeXml(value);
+//       });
+//     });
+//   });
+//
+//   test('fb55/entities', (measure) => {
+//     values.forEach((value) => {
+//       measure(() => {
+//         decodeXML(value);
+//       });
+//     });
+//   });
+//
+// }, {warmupIterationCount: 1_000, targetRme: 0});
 
-}, {warmupIterationCount: 1_000, targetRme: 0});
-
-describe('XML benchmark', () => {
-  values.forEach((value) => {
+describe('Decode XML', () => {
+  valuesToDecode.forEach((value) => {
     describe(value, () => {
 
       test('speedy-entities', (measure) => {
@@ -49,10 +74,10 @@ describe('XML benchmark', () => {
       });
     });
   });
-}, {targetRme: 0.002});
+}, {warmupIterationCount: 100, targetRme: 0.002});
 
-describe('HTML benchmark', () => {
-  values.forEach((value) => {
+describe('Decode HTML', () => {
+  valuesToDecode.forEach((value) => {
     describe(value, () => {
 
       test('speedy-entities', (measure) => {
@@ -68,4 +93,42 @@ describe('HTML benchmark', () => {
       });
     });
   });
-}, {targetRme: 0.002});
+}, {warmupIterationCount: 100, targetRme: 0.002});
+
+describe('Encode XML', () => {
+  valuesToEncode.forEach((value) => {
+    describe(value, () => {
+
+      test('speedy-entities', (measure) => {
+        measure(() => {
+          encodeXml(value);
+        });
+      });
+
+      test('fb55/entities', (measure) => {
+        measure(() => {
+          encodeXML(value);
+        });
+      });
+    });
+  });
+}, {warmupIterationCount: 100, targetRme: 0.002});
+
+describe('Encode HTML', () => {
+  valuesToEncode.forEach((value) => {
+    describe(value, () => {
+
+      test('speedy-entities', (measure) => {
+        measure(() => {
+          encodeHtml(value);
+        });
+      });
+
+      test('fb55/entities', (measure) => {
+        measure(() => {
+          encodeHTML(value);
+        });
+      });
+    });
+  });
+}, {warmupIterationCount: 100, targetRme: 0.002});

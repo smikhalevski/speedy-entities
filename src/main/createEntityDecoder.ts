@@ -1,17 +1,31 @@
-import {EntityManager} from './EntityManager';
 import {fromCodePoint} from './fromCodePoint';
+import {Trie, trieCreate, trieSearch, trieSet} from '@smikhalevski/trie';
 
-export interface IEntityDecoderOptions {
+interface NamedCharRef {
+  value: string;
+  legacy: boolean;
+}
+
+export interface EntityDecoderOptions {
 
   /**
-   * If `true` then numeric character references must be terminated with a semicolon.
+   * An entity manager that defines named entities.
+   */
+  namedCharRefs?: Record<string, string>;
+
+  legacyNamedCharRefs?: Record<string, string>;
+
+  /**
+   * If `true` then numeric character references must be terminated with a semicolon to be decoded. Otherwise, numeric
+   * character references are recognized even if they are not terminated with a semicolon.
    *
    * @default false
    */
-  numericCharacterReferenceTerminated?: boolean;
+  numericCharRefTerminated?: boolean;
 
   /**
-   * If `true` then an error is thrown when an illegal code point is met.
+   * If `true` then an error is thrown when an illegal code point is met. Otherwise, a {@link replacementChar} would be
+   * used instead.
    *
    * @default false
    * @see {@link https://en.wikipedia.org/wiki/Valid_characters_in_XML Valid characters in XML on Wikipedia}
@@ -29,17 +43,20 @@ export interface IEntityDecoderOptions {
 /**
  * Creates an entity decoder that rewrites numeric and named entities found in input to their respective values.
  *
- * @param entityManager An entity manager that defines named entities.
  * @param options The decoder options.
+ * @returns A function that decodes entities in the string.
  */
-export function createEntityDecoder(entityManager: EntityManager, options?: IEntityDecoderOptions): (input: string) => string {
-  options ||= {};
+export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
 
   const {
-    numericCharacterReferenceTerminated = false,
+    namedCharRefs,
+    legacyNamedCharRefs,
+    numericCharRefTerminated = false,
     illegalCodePointsForbidden = false,
     replacementChar = '\ufffd',
   } = options;
+
+  const charRefTrie = appendCharRefs(legacyNamedCharRefs, true, appendCharRefs(namedCharRefs, false, null));
 
   return (input) => {
 
@@ -50,41 +67,36 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
 
     const inputLength = input.length;
 
-    while (charIndex < inputLength) {
+    while (charIndex < inputLength - 1) {
 
       let startIndex = input.indexOf('&', charIndex);
       if (startIndex === -1) {
         break;
       }
 
-      charIndex = startIndex;
+      charIndex = startIndex++;
 
-      let entityValue;
-      let endIndex;
+      let charRefValue: string | null = null;
+      let endIndex = startIndex;
 
-      // Numeric character reference
-      if (input.charCodeAt(++startIndex) === 35 /* # */) {
+      if (startIndex < inputLength - 2 && input.charCodeAt(startIndex) === 35 /* # */) {
+        // Numeric character reference
 
-        const radixCharCode = input.charCodeAt(++startIndex);
-
-        let charCode;
-        let digitCount = 0;
+        let charCode = 0;
         let codePoint = 0;
 
-        if (radixCharCode === 120 /* x */ || radixCharCode === 88 /* X */) {
+        if ((input.charCodeAt(++startIndex) | 32) === 120 /* x */) {
           endIndex = ++startIndex;
 
-          // Parse hexadecimal
-          while (digitCount < 6 && endIndex < inputLength) {
-            charCode = input.charCodeAt(endIndex);
+          // parseInt of a hexadecimal number
+          while (endIndex - startIndex < 6 && endIndex < inputLength) {
 
-            if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */) {
-              codePoint = codePoint * 16 + (charCode - (charCode & 0b1110000));
-              ++digitCount;
-              ++endIndex;
-            } else if (charCode >= 97 /* a */ && charCode <= 102 /* f */ || charCode >= 65 /* A */ && charCode <= 70 /* F */) {
-              codePoint = codePoint * 16 + (charCode - (charCode & 0b1110000)) + 9;
-              ++digitCount;
+            // Convert alpha to lower case
+            charCode = input.charCodeAt(endIndex) | 32;
+
+            if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */ || charCode >= 97 /* a */ && charCode <= 102 /* f */) {
+              // Convert "0" → 0 and "f" → 15
+              codePoint = codePoint * 16 + charCode - (charCode & 112) + (charCode >> 6) * 9;
               ++endIndex;
             } else {
               break;
@@ -94,65 +106,77 @@ export function createEntityDecoder(entityManager: EntityManager, options?: IEnt
         } else {
           endIndex = startIndex;
 
-          // Parse decimal
-          while (digitCount < 6 && endIndex < inputLength) {
-            charCode = input.charCodeAt(endIndex);
+          // parseInt of a decimal number
+          while (endIndex - startIndex < 6 && endIndex < inputLength) {
+            charCode = input.charCodeAt(endIndex) | 0;
 
             if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */) {
-              codePoint = codePoint * 10 + (charCode - (charCode & 0b1110000));
-              ++digitCount;
+              codePoint = codePoint * 10 + charCode - (charCode & 112);
               ++endIndex;
             } else {
               break;
             }
           }
-
         }
 
-        if (digitCount >= 2) {
-          const terminated = input.charCodeAt(endIndex) === 59 /* ; */;
+        if (endIndex - startIndex >= 2) {
+          const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
 
-          if (terminated || !numericCharacterReferenceTerminated) {
-            entityValue = fromCodePoint(codePoint, replacementChar, illegalCodePointsForbidden);
+          if (terminated || !numericCharRefTerminated) {
+            charRefValue = fromCodePoint(codePoint, replacementChar, illegalCodePointsForbidden);
           }
           if (terminated) {
             ++endIndex;
           }
         }
 
-      } else {
+      } else if (charRefTrie !== null) {
         // Named character reference
-        endIndex = startIndex;
 
-        const entity = entityManager.search(input, startIndex);
+        const trie = trieSearch(charRefTrie, input, startIndex);
 
-        if (entity != null) {
-          endIndex += entity.name.length;
+        if (trie !== null) {
+          const namedCharRef = trie.value!;
 
-          const terminated = input.charCodeAt(endIndex) === 59 /* ; */;
+          endIndex += trie.key!.length;
 
+          const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
+
+          if (terminated || namedCharRef.legacy) {
+            charRefValue = namedCharRef.value;
+          }
           if (terminated) {
             ++endIndex;
-          }
-          if (terminated || entity.legacy) {
-            entityValue = entity.value;
           }
         }
       }
 
-      if (entityValue != null) {
-        output += textIndex !== charIndex ? input.substring(textIndex, charIndex) + entityValue : entityValue;
+      // Concat decoded entity and preceding substring
+      if (charRefValue !== null) {
+        output += textIndex === charIndex ? charRefValue : input.substring(textIndex, charIndex) + charRefValue;
         textIndex = endIndex;
       }
 
       charIndex = endIndex;
     }
-    if (textIndex === 0) {
-      return input;
-    }
-    if (textIndex !== inputLength) {
-      output += input.substring(textIndex);
-    }
-    return output;
+    return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.substring(textIndex);
   };
+}
+
+function appendCharRefs(charRefs: Record<string, string> | undefined, legacy: boolean, trie: Trie<NamedCharRef> | null): Trie<NamedCharRef> | null {
+  if (charRefs == null) {
+    return trie;
+  }
+
+  const entries = Object.entries(charRefs);
+  if (entries.length === 0) {
+    return trie;
+  }
+
+  trie ||= trieCreate();
+
+  for (const [name, value] of entries) {
+    trieSet(trie, name, {value, legacy});
+  }
+  return trie;
 }
