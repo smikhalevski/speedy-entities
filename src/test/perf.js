@@ -11,7 +11,7 @@ const valuesToDecode = [
   '&amp&lt&gt', // unterminated XML/legacy
   '&NotNestedGreaterGreater;', // terminated non-legacy HTML
   '&NotNestedGreaterGreater', // unterminated non-legacy HTML
-  '&foo;', // unrecognized entity
+  '&NotNestedGreaterGreate', // unrecognized entity
 ];
 
 const valuesToEncode = [

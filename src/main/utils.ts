@@ -1,46 +1,81 @@
+import {Trie, trieCreate, trieSet} from '@smikhalevski/trie';
+
 export function die(message: string): never {
   throw new Error(message);
 }
 
 export const fromCharCode = String.fromCharCode;
 
-export function appendNumberOrRange(x: string | number | [string | number, string | number], ranges: Array<[number, number]>): void {
-  let x0, x1;
+export function appendRange(range: number | [number, number], ranges: [number, number][]): void {
+  let range0, range1;
 
-  if (typeof x === 'object') {
-    x0 = toCharCode(x[0]);
-    x1 = toCharCode(x[1]);
+  if (typeof range === 'number') {
+    range0 = range1 = range;
   } else {
-    x0 = x1 = toCharCode(x);
+    range0 = range[0];
+    range1 = range[1];
   }
 
   for (let i = 0; i < ranges.length; ++i) {
-    const [y0, y1] = ranges[i];
+    const [other0, other1] = ranges[i];
 
-    if (y0 - 1 <= x1 && x0 <= y1 + 1) {
+    if (other0 - 1 <= range1 && range0 <= other1 + 1) {
       ranges.splice(i, 1);
-      x0 = Math.min(x0, y0);
-      x1 = Math.max(x1, y1);
+      range0 = Math.min(range0, other0);
+      range1 = Math.max(range1, other1);
       --i;
     }
   }
 
-  ranges.push([x0, x1]);
+  ranges.push([range0, range1]);
+}
+
+export function appendReplacement(name: string, value: string, replacementMap: Map<number, string | Trie<string>>, ranges: [number, number][]): void {
+
+  const charRef = '&' + name + ';';
+  const charCode = value.charCodeAt(0);
+  const replacement = replacementMap.get(charCode);
+
+  if (typeof replacement === 'object') {
+    trieSet(replacement, value.substring(1), charRef);
+    return;
+  }
+
+  if (value.length === 1) {
+    if (replacement === undefined) {
+      appendRange(charCode, ranges);
+    }
+    replacementMap.set(charCode, charRef);
+    return;
+  }
+
+  const trie = trieCreate<string>();
+  trieSet(trie, value.substring(1), charRef);
+
+  if (replacement === undefined) {
+    for (const range of ranges) {
+      if (charCode >= range[0] && charCode <= range[1]) {
+        trieSet(trie, '', '&#x' + charCode.toString(16) + ';');
+        break;
+      }
+    }
+    appendRange(charCode, ranges);
+  } else {
+    trieSet(trie, '', replacement);
+  }
+
+  replacementMap.set(charCode, trie);
 }
 
 export function convertRangesToRegExp(ranges: [number, number][]): RegExp {
   let pattern = '';
 
-  for (const [x0, x1] of ranges) {
-    pattern += x0 === x1 ? escapeUnicode(x0) : escapeUnicode(x0) + (Math.abs(x0 - x1) === 1 ? '' : '-') + escapeUnicode(x1);
+  for (const [range0, range1] of ranges) {
+    pattern += range0 === range1 ? encodeUtf(range0) : encodeUtf(range0) + (range1 - range0 === 1 ? '' : '-') + encodeUtf(range1);
   }
   return RegExp('[' + pattern + ']', 'g');
 }
 
-function escapeUnicode(charCode: number): string {
+function encodeUtf(charCode: number): string {
   return '\\u' + charCode.toString(16).padStart(4, '0');
-}
-
-function toCharCode(value: number | string): number {
-  return typeof value === 'number' ? value : value.charCodeAt(0);
 }

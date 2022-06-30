@@ -6,8 +6,8 @@ const illegalCodePointsSet = new Set(illegalCodePoints);
 
 const overridesMap: Record<number, string> = {};
 
-for (const [key, value] of Object.entries(overrides)) {
-  overridesMap[parseInt(key)] = value;
+for (const [codePoint, value] of Object.entries(overrides)) {
+  overridesMap[parseInt(codePoint)] = value;
 }
 
 /**

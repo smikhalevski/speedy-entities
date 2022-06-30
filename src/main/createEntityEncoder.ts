@@ -1,11 +1,11 @@
-import {appendNumberOrRange, convertRangesToRegExp} from './utils';
-import {Trie, trieCreate, trieSearch, trieSet} from '@smikhalevski/trie';
+import {appendRange, appendReplacement, convertRangesToRegExp} from './utils';
+import {Trie, trieSearch} from '@smikhalevski/trie';
 
 export interface EntityEncoderOptions {
 
   namedCharRefs?: Record<string, string>;
 
-  numericCharRefs?: Array<string | number | [string | number, string | number]>;
+  numericCharRefs?: Array<number | [number, number]>;
 }
 
 export function createEntityEncoder(options: EntityEncoderOptions = {}): (input: string) => string {
@@ -15,51 +15,26 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
     numericCharRefs,
   } = options;
 
-  let replaceMap: Map<number, string | Trie<string>> | null = null;
   const ranges: [number, number][] = [];
 
-  if (namedCharRefs != null) {
-    for (const [key, value] of Object.entries(namedCharRefs)) {
-
-      const charRef = '&' + key + ';';
-      const charCode = value.charCodeAt(0);
-
-      replaceMap ||= new Map<number, string | Trie<string>>();
-
-      const q = replaceMap.get(charCode);
-
-      if (value.length === 1) {
-        if (q === undefined || typeof q === 'string') {
-          replaceMap.set(charCode, charRef);
-        } else {
-          trieSet(q, '', charRef);
-        }
-      } else {
-        if (q === undefined || typeof q === 'string') {
-          const trie = trieCreate<string>();
-          trieSet(trie, value.substring(1), charRef);
-
-          if (typeof q === 'string') {
-            trieSet(trie, '', q);
-          }
-          replaceMap.set(charCode, trie);
-        } else {
-          trieSet(q, value.substring(1), charRef);
-        }
-      }
-
-      appendNumberOrRange(charCode, ranges);
-    }
-  }
+  let replacementMap: Map<number, string | Trie<string>> | null = null;
 
   if (numericCharRefs != null) {
-    for (const charRef of numericCharRefs) {
-      appendNumberOrRange(charRef, ranges);
+    for (const charCode of numericCharRefs) {
+      appendRange(charCode, ranges);
     }
   }
 
-  if (ranges.length === 0) {
-    return (input) => input;
+  if (namedCharRefs != null) {
+    const entries = Object.entries(namedCharRefs);
+    if (entries.length !== 0) {
+
+      replacementMap = new Map();
+
+      for (const [name, value] of entries) {
+        appendReplacement(name, value, replacementMap, ranges);
+      }
+    }
   }
 
   const re = convertRangesToRegExp(ranges);
@@ -67,48 +42,46 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
   return (input) => {
 
     let output = '';
-    let endIndex = 0;
+    let textIndex = 0;
 
     const inputLength = input.length;
 
-    re.lastIndex = 0;
-
     while (re.test(input)) {
-      const lastIndex = re.lastIndex;
+
+      let charRef: string | null = null;
+      let lastIndex = re.lastIndex;
+
       const startIndex = lastIndex - 1;
-
-      if (endIndex !== startIndex) {
-        output += input.substring(endIndex, startIndex);
-      }
-
       const charCode = input.charCodeAt(startIndex);
 
-      if (replaceMap !== null) {
-        const replacement = replaceMap.get(charCode);
+      if (replacementMap !== null) {
+        const replacement = replacementMap.get(charCode);
 
         if (typeof replacement === 'string') {
           // Named character reference
-          output += replacement;
-          endIndex = lastIndex;
-          continue;
-        }
+          charRef = replacement;
 
-        if (replacement !== undefined) {
+        } else if (replacement !== undefined) {
+          // Named character reference
           const trie = trieSearch(replacement, input, lastIndex, inputLength);
-          if (trie !== null) {
-            // Named character reference
-            output += trie.value;
-            re.lastIndex = endIndex = lastIndex + trie.key!.length;
+          if (trie === null) {
             continue;
           }
+
+          charRef = trie.value!;
+          re.lastIndex = lastIndex += trie.key!.length;
         }
       }
 
-      // Numeric character reference
-      output += '&#' + charCode + ';';
-      endIndex = lastIndex;
+      if (charRef === null) {
+        // Numeric character reference
+        charRef = '&#x' + charCode.toString(16) + ';';
+      }
+
+      output += textIndex === startIndex ? charRef : input.substring(textIndex, startIndex) + charRef;
+      textIndex = lastIndex;
     }
 
-    return endIndex === 0 ? input : endIndex === inputLength ? output : output + input.substring(endIndex);
+    return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.substring(textIndex);
   };
 }

@@ -12,8 +12,9 @@ describe('createEntityEncoder', () => {
     });
 
     expect(encode('abc')).toBe('abc');
-    expect(encode('<')).toBe('&#60;');
+    expect(encode('<')).toBe("&#x3c;");
     expect(encode('okay')).toBe('&foo;');
+    expect(encode('o')).toBe('o');
   });
 
   test('supports numeric entities', () => {
@@ -21,6 +22,6 @@ describe('createEntityEncoder', () => {
       numericCharRefs: [38, 255, 252, 39],
     });
 
-    expect(encode('&ÿü\'')).toBe('&#38;&#255;&#252;&#39;');
+    expect(encode('&ÿü\'')).toBe("&#x26;&#xff;&#xfc;&#x27;");
   });
 });

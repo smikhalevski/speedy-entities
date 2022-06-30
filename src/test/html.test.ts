@@ -1,4 +1,4 @@
-import {decodeHtml, encodeHtml, encodeXml} from '../main';
+import {decodeHtml, encodeHtml} from '../main';
 
 describe('decodeHtml', () => {
 
@@ -78,7 +78,7 @@ describe('decodeHtml', () => {
 describe('encodeHtml', () => {
 
   test('encodes chars', () => {
-    expect(encodeXml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
+    expect(encodeHtml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
   });
 
   test('encodes code points', () => {
@@ -87,6 +87,6 @@ describe('encodeHtml', () => {
   });
 
   test('does not encode ASCII', () => {
-    expect(encodeXml('abc')).toBe('abc');
+    expect(encodeHtml('abc')).toBe('abc');
   });
 });
