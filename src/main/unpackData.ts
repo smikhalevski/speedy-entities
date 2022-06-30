@@ -1,4 +1,4 @@
-import {fromCharCode} from './utils';
+import { fromCharCode } from './utils';
 
 /**
  * Unpacks a mapping packed at build time.

@@ -1,8 +1,7 @@
 import entitiesData from '../main/gen/html-entities.json';
-import {unpackData} from '../main/unpackData';
+import { unpackData } from '../main/unpackData';
 
 describe('unpackData', () => {
-
   test('unpacks entities that consist of a single chars', () => {
     expect(unpackData(entitiesData).ClockwiseContourIntegral).toBe('\u2232');
   });

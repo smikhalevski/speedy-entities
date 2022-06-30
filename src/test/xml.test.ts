@@ -1,7 +1,6 @@
-import {decodeXml, encodeXml} from '../main';
+import { decodeXml, encodeXml } from '../main';
 
 describe('decodeXml', () => {
-
   test('decodes terminated decimal entities', () => {
     expect(decodeXml('&#60;')).toBe('<');
   });
@@ -67,7 +66,6 @@ describe('decodeXml', () => {
 });
 
 describe('encodeXml', () => {
-
   test('encodes to names character references', () => {
     expect(encodeXml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
   });

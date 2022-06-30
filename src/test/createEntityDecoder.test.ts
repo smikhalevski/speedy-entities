@@ -1,13 +1,10 @@
-// noinspection ES6PreferShortImport
-import {createEntityDecoder} from '../main/createEntityDecoder';
+import { createEntityDecoder } from '../main';
 
 describe('createEntityDecoder', () => {
-
   test('supports arbitrary named entities', () => {
-
     const decode = createEntityDecoder({
-      namedCharRefs: {foo: 'okay'},
-      legacyNamedCharRefs: {bar: 'nope'},
+      namedCharRefs: { foo: 'okay' },
+      legacyNamedCharRefs: { bar: 'nope' },
     });
 
     expect(decode('&foo;')).toBe('okay');

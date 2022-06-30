@@ -1,7 +1,6 @@
-import {decodeHtml, encodeHtml} from '../main';
+import { decodeHtml, encodeHtml } from '../main';
 
 describe('decodeHtml', () => {
-
   test('decodes terminated decimal entities', () => {
     expect(decodeHtml('&#60;')).toBe('<');
   });
@@ -76,7 +75,6 @@ describe('decodeHtml', () => {
 });
 
 describe('encodeHtml', () => {
-
   test('encodes chars', () => {
     expect(encodeHtml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
   });

@@ -1,8 +1,7 @@
-import {appendRange, appendReplacement, convertRangesToRegExp} from '../main/utils';
-import {Trie, trieCreate, trieSet} from '@smikhalevski/trie';
+import { appendRange, appendReplacement, convertRangesToRegExp } from '../main/utils';
+import { Trie, trieCreate, trieSet } from '@smikhalevski/trie';
 
 describe('appendRange', () => {
-
   test('appends a number', () => {
     const ranges: [number, number][] = [];
 
@@ -36,7 +35,10 @@ describe('appendRange', () => {
   });
 
   test('appends a bridging range', () => {
-    const ranges: [number, number][] = [[2, 4], [5, 7]];
+    const ranges: [number, number][] = [
+      [2, 4],
+      [5, 7],
+    ];
 
     appendRange([3, 6], ranges);
 
@@ -69,7 +71,6 @@ describe('appendRange', () => {
 });
 
 describe('appendReplacement', () => {
-
   test('appends an entity that encodes a single char', () => {
     const replacementMap = new Map<number, string | Trie<string>>();
     const ranges: [number, number][] = [];
@@ -110,7 +111,7 @@ describe('appendReplacement', () => {
 
     const trie = trieCreate();
     trieSet(trie, 'bc', '&foo;');
-    trieSet(trie, '', "&#x61;");
+    trieSet(trie, '', '&#x61;');
 
     appendReplacement('foo', 'abc', replacementMap, ranges);
 
@@ -150,7 +151,6 @@ describe('appendReplacement', () => {
 });
 
 describe('convertRangesToRegExp', () => {
-
   test('range with one char', () => {
     expect(convertRangesToRegExp([[97, 97]])).toEqual(/[\u0061]/g);
   });
@@ -164,7 +164,18 @@ describe('convertRangesToRegExp', () => {
   });
 
   test('multiple ranges', () => {
-    expect(convertRangesToRegExp([[10, 20], [97, 99]])).toEqual(/[\u000a-\u0014\u0061-\u0063]/g);
-    expect(convertRangesToRegExp([[10, 10], [97, 99]])).toEqual(/[\u000a\u0061-\u0063]/g);
+    expect(
+      convertRangesToRegExp([
+        [10, 20],
+        [97, 99],
+      ])
+    ).toEqual(/[\u000a-\u0014\u0061-\u0063]/g);
+
+    expect(
+      convertRangesToRegExp([
+        [10, 10],
+        [97, 99],
+      ])
+    ).toEqual(/[\u000a\u0061-\u0063]/g);
   });
 });

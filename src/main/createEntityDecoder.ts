@@ -1,5 +1,5 @@
-import {fromCodePoint} from './fromCodePoint';
-import {Trie, trieCreate, trieSearch, trieSet} from '@smikhalevski/trie';
+import { fromCodePoint } from './fromCodePoint';
+import { Trie, trieCreate, trieSearch, trieSet } from '@smikhalevski/trie';
 
 interface NamedCharRef {
   value: string;
@@ -7,7 +7,6 @@ interface NamedCharRef {
 }
 
 export interface EntityDecoderOptions {
-
   /**
    * An entity manager that defines named entities.
    */
@@ -47,7 +46,6 @@ export interface EntityDecoderOptions {
  * @returns A function that decodes entities in the string.
  */
 export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
-
   const {
     namedCharRefs,
     legacyNamedCharRefs,
@@ -58,8 +56,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
   const charRefTrie = appendCharRefs(legacyNamedCharRefs, true, appendCharRefs(namedCharRefs, false, null));
 
-  return (input) => {
-
+  return input => {
     let output = '';
 
     let textIndex = 0;
@@ -68,7 +65,6 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
     const inputLength = input.length;
 
     while (charIndex < inputLength - 1) {
-
       let startIndex = input.indexOf('&', charIndex);
       if (startIndex === -1) {
         break;
@@ -90,11 +86,13 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
           // parseInt of a hexadecimal number
           while (endIndex - startIndex < 6 && endIndex < inputLength) {
-
             // Convert alpha to lower case
             charCode = input.charCodeAt(endIndex) | 32;
 
-            if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */ || charCode >= 97 /* a */ && charCode <= 102 /* f */) {
+            if (
+              (charCode >= 48 /* 0 */ && charCode <= 57) /* 9 */ ||
+              (charCode >= 97 /* a */ && charCode <= 102) /* f */
+            ) {
               // Convert "0" → 0 and "f" → 15
               codePoint = codePoint * 16 + charCode - (charCode & 112) + (charCode >> 6) * 9;
               ++endIndex;
@@ -102,7 +100,6 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
               break;
             }
           }
-
         } else {
           endIndex = startIndex;
 
@@ -120,7 +117,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
         }
 
         if (endIndex - startIndex >= 2) {
-          const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
+          const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59; /* ; */
 
           if (terminated || !numericCharRefTerminated) {
             charRefValue = fromCodePoint(codePoint, replacementChar, illegalCodePointsForbidden);
@@ -129,7 +126,6 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
             ++endIndex;
           }
         }
-
       } else if (charRefTrie !== null) {
         // Named character reference
 
@@ -140,7 +136,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
           endIndex += trie.key!.length;
 
-          const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59 /* ; */;
+          const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59; /* ; */
 
           if (terminated || namedCharRef.legacy) {
             charRefValue = namedCharRef.value;
@@ -163,7 +159,11 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
   };
 }
 
-function appendCharRefs(charRefs: Record<string, string> | undefined, legacy: boolean, trie: Trie<NamedCharRef> | null): Trie<NamedCharRef> | null {
+function appendCharRefs(
+  charRefs: Record<string, string> | undefined,
+  legacy: boolean,
+  trie: Trie<NamedCharRef> | null
+): Trie<NamedCharRef> | null {
   if (charRefs == null) {
     return trie;
   }
@@ -176,7 +176,7 @@ function appendCharRefs(charRefs: Record<string, string> | undefined, legacy: bo
   trie ||= trieCreate();
 
   for (const [name, value] of entries) {
-    trieSet(trie, name, {value, legacy});
+    trieSet(trie, name, { value, legacy });
   }
   return trie;
 }
