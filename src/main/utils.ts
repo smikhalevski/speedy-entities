@@ -1,4 +1,4 @@
-import {Trie, trieCreate, trieSet} from '@smikhalevski/trie';
+import { Trie, trieCreate, trieSet } from '@smikhalevski/trie';
 
 export function die(message: string): never {
   throw new Error(message);
@@ -30,8 +30,12 @@ export function appendRange(range: number | [number, number], ranges: [number, n
   ranges.push([range0, range1]);
 }
 
-export function appendReplacement(name: string, value: string, replacementMap: Map<number, string | Trie<string>>, ranges: [number, number][]): void {
-
+export function appendReplacement(
+  name: string,
+  value: string,
+  replacementMap: Map<number, string | Trie<string>>,
+  ranges: [number, number][]
+): void {
   const charRef = '&' + name + ';';
   const charCode = value.charCodeAt(0);
   const replacement = replacementMap.get(charCode);
@@ -67,15 +71,19 @@ export function appendReplacement(name: string, value: string, replacementMap: M
   replacementMap.set(charCode, trie);
 }
 
-export function convertRangesToRegExp(ranges: [number, number][]): RegExp {
+export function convertRangesToRegExp(ranges: readonly [number, number][]): RegExp {
   let pattern = '';
 
   for (const [range0, range1] of ranges) {
-    pattern += range0 === range1 ? encodeUtf(range0) : encodeUtf(range0) + (range1 - range0 === 1 ? '' : '-') + encodeUtf(range1);
+    if (range0 === range1) {
+      pattern += escapeUnicode(range0);
+    } else {
+      pattern += escapeUnicode(range0) + (range1 - range0 === 1 ? '' : '-') + escapeUnicode(range1);
+    }
   }
   return RegExp('[' + pattern + ']', 'g');
 }
 
-function encodeUtf(charCode: number): string {
+function escapeUnicode(charCode: number): string {
   return '\\u' + charCode.toString(16).padStart(4, '0');
 }

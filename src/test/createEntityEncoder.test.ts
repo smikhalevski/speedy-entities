@@ -1,8 +1,6 @@
-// noinspection ES6PreferShortImport
-import {createEntityEncoder} from '../main/createEntityEncoder';
+import { createEntityEncoder } from '../main';
 
 describe('createEntityEncoder', () => {
-
   test('supports arbitrary named entities', () => {
     const encode = createEntityEncoder({
       namedCharRefs: {
@@ -12,7 +10,7 @@ describe('createEntityEncoder', () => {
     });
 
     expect(encode('abc')).toBe('abc');
-    expect(encode('<')).toBe("&#x3c;");
+    expect(encode('<')).toBe('&#x3c;');
     expect(encode('okay')).toBe('&foo;');
     expect(encode('o')).toBe('o');
   });
@@ -22,6 +20,6 @@ describe('createEntityEncoder', () => {
       numericCharRefs: [38, 255, 252, 39],
     });
 
-    expect(encode('&ÿü\'')).toBe("&#x26;&#xff;&#xfc;&#x27;");
+    expect(encode("&ÿü'")).toBe('&#x26;&#xff;&#xfc;&#x27;');
   });
 });

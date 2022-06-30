@@ -1,19 +1,14 @@
-import {appendRange, appendReplacement, convertRangesToRegExp} from './utils';
-import {Trie, trieSearch} from '@smikhalevski/trie';
+import { appendRange, appendReplacement, convertRangesToRegExp } from './utils';
+import { Trie, trieSearch } from '@smikhalevski/trie';
 
 export interface EntityEncoderOptions {
-
   namedCharRefs?: Record<string, string>;
 
   numericCharRefs?: Array<number | [number, number]>;
 }
 
 export function createEntityEncoder(options: EntityEncoderOptions = {}): (input: string) => string {
-
-  const {
-    namedCharRefs,
-    numericCharRefs,
-  } = options;
+  const { namedCharRefs, numericCharRefs } = options;
 
   const ranges: [number, number][] = [];
 
@@ -28,7 +23,6 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
   if (namedCharRefs != null) {
     const entries = Object.entries(namedCharRefs);
     if (entries.length !== 0) {
-
       replacementMap = new Map();
 
       for (const [name, value] of entries) {
@@ -39,15 +33,13 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
 
   const re = convertRangesToRegExp(ranges);
 
-  return (input) => {
-
+  return input => {
     let output = '';
     let textIndex = 0;
 
     const inputLength = input.length;
 
     while (re.test(input)) {
-
       let charRef: string | null = null;
       let lastIndex = re.lastIndex;
 
@@ -60,7 +52,6 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
         if (typeof replacement === 'string') {
           // Named character reference
           charRef = replacement;
-
         } else if (replacement !== undefined) {
           // Named character reference
           const trie = trieSearch(replacement, input, lastIndex, inputLength);

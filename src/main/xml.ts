@@ -1,9 +1,9 @@
-import {createEntityDecoder} from './createEntityDecoder';
-import {createEntityEncoder} from './createEntityEncoder';
+import { createEntityDecoder } from './createEntityDecoder';
+import { createEntityEncoder } from './createEntityEncoder';
 
 export const xmlNamedCharRefs = {
   amp: '&',
-  apos: '\'',
+  apos: "'",
   gt: '>',
   lt: '<',
   quot: '"',
