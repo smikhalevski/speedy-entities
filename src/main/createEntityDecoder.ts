@@ -60,7 +60,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
   return (input) => {
 
-    let output: string | null = null;
+    let output = '';
 
     let textIndex = 0;
     let charIndex = 0;
@@ -153,14 +153,13 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
       // Concat decoded entity and preceding substring
       if (charRefValue !== null) {
-        const str = textIndex === charIndex ? charRefValue : input.substring(textIndex, charIndex) + charRefValue;
-        output = output === null ? str : output + str;
+        output += textIndex === charIndex ? charRefValue : input.substring(textIndex, charIndex) + charRefValue;
         textIndex = endIndex;
       }
 
       charIndex = endIndex;
     }
-    return output === null ? input : textIndex === inputLength ? output : output + input.substring(textIndex);
+    return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.substring(textIndex);
   };
 }
 
@@ -176,8 +175,8 @@ function appendCharRefs(charRefs: Record<string, string> | undefined, legacy: bo
 
   trie ||= trieCreate();
 
-  for (const [key, value] of entries) {
-    trieSet(trie, key, {value, legacy});
+  for (const [name, value] of entries) {
+    trieSet(trie, name, {value, legacy});
   }
   return trie;
 }
