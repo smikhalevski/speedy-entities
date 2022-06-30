@@ -1,4 +1,4 @@
-import { decodeHtml, encodeHtml } from '../main';
+import { decodeHtml, encodeAsciiHtml, encodeHtml } from '../main';
 
 describe('decodeHtml', () => {
   test('decodes terminated decimal entities', () => {
@@ -86,5 +86,13 @@ describe('encodeHtml', () => {
 
   test('does not encode ASCII', () => {
     expect(encodeHtml('abc')).toBe('abc');
+  });
+});
+
+describe('encodeAsciiHtml', () => {
+  test('encodes UTF chars', () => {
+    expect(encodeAsciiHtml("über & unter's sprießende <boo> ❤️👊😉")).toBe(
+      '&uuml;ber &amp; unter&apos;s sprie&szlig;ende &lt;boo&gt; &#x2764;&#xfe0f;&#x1f44a;&#x1f609;'
+    );
   });
 });

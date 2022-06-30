@@ -15,3 +15,8 @@ export const decodeHtml = createEntityDecoder({
 export const encodeHtml = createEntityEncoder({
   namedCharRefs: Object.assign({}, legacyHtmlNamedCharRefs, htmlNamedCharRefs),
 });
+
+export const encodeAsciiHtml = createEntityEncoder({
+  namedCharRefs: Object.assign({}, legacyHtmlNamedCharRefs, htmlNamedCharRefs),
+  numericCharRefs: [[0x80, 0xffff]],
+});

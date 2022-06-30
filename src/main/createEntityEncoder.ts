@@ -44,10 +44,14 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
       let lastIndex = re.lastIndex;
 
       const startIndex = lastIndex - 1;
-      const charCode = input.charCodeAt(startIndex);
+      const codePoint = input.codePointAt(startIndex)!;
+
+      if (codePoint > 0xffff) {
+        ++lastIndex;
+      }
 
       if (replacementMap !== null) {
-        const replacement = replacementMap.get(charCode);
+        const replacement = replacementMap.get(codePoint);
 
         if (typeof replacement === 'string') {
           // Named character reference
@@ -60,17 +64,17 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
           }
 
           charRef = trie.value!;
-          re.lastIndex = lastIndex += trie.key!.length;
+          lastIndex += trie.key!.length;
         }
       }
 
       if (charRef === null) {
         // Numeric character reference
-        charRef = '&#x' + charCode.toString(16) + ';';
+        charRef = '&#x' + codePoint.toString(16) + ';';
       }
 
       output += textIndex === startIndex ? charRef : input.substring(textIndex, startIndex) + charRef;
-      textIndex = lastIndex;
+      re.lastIndex = textIndex = lastIndex;
     }
 
     return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.substring(textIndex);

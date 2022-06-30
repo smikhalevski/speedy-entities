@@ -38,7 +38,8 @@ export function appendReplacement(
 ): void {
   const charRef = '&' + name + ';';
   const charCode = value.charCodeAt(0);
-  const replacement = replacementMap.get(charCode);
+  const codePoint = value.codePointAt(0)!;
+  const replacement = replacementMap.get(codePoint);
 
   if (typeof replacement === 'object') {
     trieSet(replacement, value.substring(1), charRef);
@@ -49,7 +50,7 @@ export function appendReplacement(
     if (replacement === undefined) {
       appendRange(charCode, ranges);
     }
-    replacementMap.set(charCode, charRef);
+    replacementMap.set(codePoint, charRef);
     return;
   }
 
@@ -58,8 +59,8 @@ export function appendReplacement(
 
   if (replacement === undefined) {
     for (const range of ranges) {
-      if (charCode >= range[0] && charCode <= range[1]) {
-        trieSet(trie, '', '&#x' + charCode.toString(16) + ';');
+      if (codePoint >= range[0] && codePoint <= range[1]) {
+        trieSet(trie, '', '&#x' + codePoint.toString(16) + ';');
         break;
       }
     }
@@ -68,7 +69,7 @@ export function appendReplacement(
     trieSet(trie, '', replacement);
   }
 
-  replacementMap.set(charCode, trie);
+  replacementMap.set(codePoint, trie);
 }
 
 export function convertRangesToRegExp(ranges: readonly [number, number][]): RegExp {

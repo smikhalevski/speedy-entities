@@ -1,5 +1,5 @@
-const { encodeXML, encodeHTML, decodeXML, decodeHTML } = require('entities');
-const { encodeXml, encodeHtml, decodeXml, decodeHtml } = require('../../lib/index-cjs');
+const { escapeUTF8, encodeHTML, decodeXML, decodeHTML } = require('entities');
+const { encodeXml, encodeAsciiHtml, decodeXml, decodeHtml } = require('../../lib/index-cjs');
 
 const valuesToDecode = [
   'abc', // ASCII text
@@ -21,41 +21,45 @@ const valuesToEncode = [
   '\u2269\uFE00', // code point, named character reference
 ];
 
-// describe('orig test', () => {
-//   const textToDecode = `This is a simple text &uuml;ber &#x3f; something.`;
-//
-//   test('speedy-entities', (measure) => {
-//     measure(() => {
-//       decodeHtml(textToDecode);
-//     });
-//   });
-//
-//   test('fb55/entities', (measure) => {
-//     measure(() => {
-//       decodeHTML(textToDecode);
-//     });
-//   });
-// }, {warmupIterationCount: 100, targetRme: 0.002});
+describe(
+  'Decode end-to-end',
+  () => {
+    const textToDecode = 'This is a simple text &uuml;ber &#x3f; something.';
 
-// describe('Average across ' + values.length + ' samples', () => {
-//
-//   test('speedy-entities', (measure) => {
-//     values.forEach((value) => {
-//       measure(() => {
-//         decodeXml(value);
-//       });
-//     });
-//   });
-//
-//   test('fb55/entities', (measure) => {
-//     values.forEach((value) => {
-//       measure(() => {
-//         decodeXML(value);
-//       });
-//     });
-//   });
-//
-// }, {warmupIterationCount: 1_000, targetRme: 0});
+    test('speedy-entities', measure => {
+      measure(() => {
+        decodeHtml(textToDecode);
+      });
+    });
+
+    test('fb55/entities', measure => {
+      measure(() => {
+        decodeHTML(textToDecode);
+      });
+    });
+  },
+  { warmupIterationCount: 100, targetRme: 0.002 }
+);
+
+describe(
+  'Encode end-to-end',
+  () => {
+    const textToDecode = "über & unter's sprießende <boo> ❤️👊😉";
+
+    test('speedy-entities', measure => {
+      measure(() => {
+        encodeAsciiHtml(textToDecode);
+      });
+    });
+
+    test('fb55/entities', measure => {
+      measure(() => {
+        encodeHTML(textToDecode);
+      });
+    });
+  },
+  { warmupIterationCount: 100, targetRme: 0.002 }
+);
 
 describe(
   'Decode XML',
@@ -114,7 +118,7 @@ describe(
 
         test('fb55/entities', measure => {
           measure(() => {
-            encodeXML(value);
+            escapeUTF8(value);
           });
         });
       });
@@ -130,7 +134,7 @@ describe(
       describe(value, () => {
         test('speedy-entities', measure => {
           measure(() => {
-            encodeHtml(value);
+            encodeAsciiHtml(value);
           });
         });
 
