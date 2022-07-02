@@ -1,23 +1,28 @@
-import { fromCodePoint } from './fromCodePoint';
 import { Trie, trieCreate, trieSearch, trieSet } from '@smikhalevski/trie';
 
-interface NamedCharRef {
+interface CharRef {
   value: string;
   legacy: boolean;
+}
+
+export interface Dict {
+  [name: string]: string;
 }
 
 export interface EntityDecoderOptions {
   /**
    * A map from a char reference name to its value. Char references, listed in this map, must be terminated with a
    * semicolon.
+   *
+   * @see https://www.w3.org/TR/2011/WD-html5-20110525/named-character-references.html Named character references on W3C
    */
-  namedCharRefs?: Record<string, string>;
+  namedCharRefs?: Dict;
 
   /**
    * A map from a char reference name to its value. Char references, listed in this map, would be still recognized,
    * even if they aren't terminated with a semicolon.
    */
-  legacyNamedCharRefs?: Record<string, string>;
+  legacyNamedCharRefs?: Dict;
 
   /**
    * If `true` then numeric character references must be terminated with a semicolon to be decoded. Otherwise, numeric
@@ -26,22 +31,6 @@ export interface EntityDecoderOptions {
    * @default false
    */
   numericCharRefSemicolonRequired?: boolean;
-
-  /**
-   * If `true` then an error is thrown when an illegal code point is met. Otherwise, a {@link replacementChar} would be
-   * used instead.
-   *
-   * @default false
-   * @see {@link https://en.wikipedia.org/wiki/Valid_characters_in_XML Valid characters in XML on Wikipedia}
-   */
-  illegalCodePointsForbidden?: boolean;
-
-  /**
-   * The char that is used instead of the illegal code point.
-   *
-   * @default "\ufffd"
-   */
-  replacementChar?: string;
 }
 
 /**
@@ -51,15 +40,9 @@ export interface EntityDecoderOptions {
  * @returns A function that decodes entities in the string.
  */
 export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
-  const {
-    namedCharRefs,
-    legacyNamedCharRefs,
-    numericCharRefSemicolonRequired = false,
-    illegalCodePointsForbidden = false,
-    replacementChar = '\ufffd',
-  } = options;
+  const { namedCharRefs, legacyNamedCharRefs, numericCharRefSemicolonRequired = false } = options;
 
-  const charRefTrie = appendCharRefs(legacyNamedCharRefs, true, appendCharRefs(namedCharRefs, false, null));
+  const charRefTrie = appendCharRef(legacyNamedCharRefs, true, appendCharRef(namedCharRefs, false, null));
 
   return input => {
     let output = '';
@@ -121,12 +104,34 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
           }
         }
 
-        if (endIndex - startIndex >= 2) {
+        if (endIndex !== startIndex) {
+          // At least one digit must present
+
           const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59; /* ; */
 
           if (terminated || !numericCharRefSemicolonRequired) {
-            charRefValue = fromCodePoint(codePoint, replacementChar, illegalCodePointsForbidden);
+            // Convert a code point to a string
+            // https://github.com/mathiasbynens/he/blob/master/src/he.js#L106-L134
+
+            if (codePoint === 0 || (codePoint >= 0xd800 && codePoint <= 0xdfff) || codePoint > 0x10ffff) {
+              // Character reference is 0, or outside the permissible Unicode range
+              charRefValue = '\uFFFD';
+            } else if (
+              codePoint >= 128 &&
+              codePoint <= 195 &&
+              codePoint !== 129 &&
+              codePoint !== 141 &&
+              codePoint !== 143 &&
+              codePoint !== 144 &&
+              codePoint !== 157
+            ) {
+              // Overridden code point
+              charRefValue = overrides[codePoint];
+            } else {
+              charRefValue = String.fromCodePoint(codePoint);
+            }
           }
+
           if (terminated) {
             ++endIndex;
           }
@@ -137,14 +142,13 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
         const trie = trieSearch(charRefTrie, input, startIndex);
 
         if (trie !== null) {
-          const namedCharRef = trie.value!;
-
           endIndex += trie.key!.length;
 
+          const charRef = trie.value!;
           const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59; /* ; */
 
-          if (terminated || namedCharRef.legacy) {
-            charRefValue = namedCharRef.value;
+          if (terminated || charRef.legacy) {
+            charRefValue = charRef.value;
           }
           if (terminated) {
             ++endIndex;
@@ -164,11 +168,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
   };
 }
 
-function appendCharRefs(
-  charRefs: Record<string, string> | undefined,
-  legacy: boolean,
-  trie: Trie<NamedCharRef> | null
-): Trie<NamedCharRef> | null {
+function appendCharRef(charRefs: Dict | undefined, legacy: boolean, trie: Trie<CharRef> | null): Trie<CharRef> | null {
   if (charRefs == null) {
     return trie;
   }
@@ -185,3 +185,35 @@ function appendCharRefs(
   }
   return trie;
 }
+
+// Standing on the shoulders of giants
+// https://github.com/mathiasbynens/he/blob/master/data/decode-map-overrides.json
+const overrides: { [codePoint: number]: string } = {
+  128: '\u20AC',
+  130: '\u201A',
+  131: '\u0192',
+  132: '\u201E',
+  133: '\u2026',
+  134: '\u2020',
+  135: '\u2021',
+  136: '\u02C6',
+  137: '\u2030',
+  138: '\u0160',
+  139: '\u2039',
+  140: '\u0152',
+  142: '\u017D',
+  145: '\u2018',
+  146: '\u2019',
+  147: '\u201C',
+  148: '\u201D',
+  149: '\u2022',
+  150: '\u2013',
+  151: '\u2014',
+  152: '\u02DC',
+  153: '\u2122',
+  154: '\u0161',
+  155: '\u203A',
+  156: '\u0153',
+  158: '\u017E',
+  159: '\u0178',
+};

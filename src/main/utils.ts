@@ -1,11 +1,5 @@
 import { Trie, trieCreate, trieSet } from '@smikhalevski/trie';
 
-export function die(message: string): never {
-  throw new Error(message);
-}
-
-export const fromCharCode = String.fromCharCode;
-
 export function appendRange(range: number | [number, number], ranges: [number, number][]): void {
   let range0, range1;
 

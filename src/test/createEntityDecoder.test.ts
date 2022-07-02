@@ -13,7 +13,25 @@ describe('createEntityDecoder', () => {
     expect(decode('&#X61;&#x62;&#x63;')).toBe('abc');
     expect(decode('&#97;&#98;&#99;')).toBe('abc');
     expect(decode('&#X3C;')).toBe('<');
-    expect(decode('&#x1d11e')).toBe('\ud834\udd1e');
+    expect(decode('&#x1D11E')).toBe('\uD834\uDD1E');
+  });
+
+  test('code points are case-insensitive', () => {
+    const decode = createEntityDecoder();
+
+    expect(decode('&#X3C;')).toBe(decode('&#x3c;'));
+  });
+
+  test('supports single digit char code', () => {
+    const decode = createEntityDecoder();
+
+    expect(decode('&#1;')).toBe('\u0001');
+  });
+
+  test('supports illegal code points', () => {
+    const decode = createEntityDecoder();
+
+    expect(decode('&#X11FFFF;')).toBe('\uFFFd');
   });
 
   test('supports numeric entities', () => {
