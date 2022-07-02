@@ -36,7 +36,7 @@ export function appendReplacement(
   const replacement = replacementMap.get(codePoint);
 
   if (typeof replacement === 'object') {
-    trieSet(replacement, value.substring(1), charRef);
+    trieSet(replacement, value.slice(1), charRef);
     return;
   }
 
@@ -49,7 +49,7 @@ export function appendReplacement(
   }
 
   const trie = trieCreate<string>();
-  trieSet(trie, value.substring(1), charRef);
+  trieSet(trie, value.slice(1), charRef);
 
   if (replacement === undefined) {
     for (const range of ranges) {

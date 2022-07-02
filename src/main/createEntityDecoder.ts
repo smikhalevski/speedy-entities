@@ -158,13 +158,13 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
       // Concat decoded entity and preceding substring
       if (charRefValue !== null) {
-        output += textIndex === charIndex ? charRefValue : input.substring(textIndex, charIndex) + charRefValue;
+        output += textIndex === charIndex ? charRefValue : input.slice(textIndex, charIndex) + charRefValue;
         textIndex = endIndex;
       }
 
       charIndex = endIndex;
     }
-    return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.substring(textIndex);
+    return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.slice(textIndex);
   };
 }
 

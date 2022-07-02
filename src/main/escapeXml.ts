@@ -28,9 +28,9 @@ export function escapeXml(input: string): string {
         break;
     }
 
-    output += textIndex === startIndex ? charRef : input.substring(textIndex, startIndex) + charRef;
+    output += textIndex === startIndex ? charRef : input.slice(textIndex, startIndex) + charRef;
     textIndex = lastIndex;
   }
 
-  return textIndex === 0 ? input : textIndex === input.length ? output : output + input.substring(textIndex);
+  return textIndex === 0 ? input : textIndex === input.length ? output : output + input.slice(textIndex);
 }

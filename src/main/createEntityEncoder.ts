@@ -73,10 +73,10 @@ export function createEntityEncoder(options: EntityEncoderOptions = {}): (input:
         charRef = '&#x' + codePoint.toString(16) + ';';
       }
 
-      output += textIndex === startIndex ? charRef : input.substring(textIndex, startIndex) + charRef;
+      output += textIndex === startIndex ? charRef : input.slice(textIndex, startIndex) + charRef;
       re.lastIndex = textIndex = lastIndex;
     }
 
-    return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.substring(textIndex);
+    return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.slice(textIndex);
   };
 }
