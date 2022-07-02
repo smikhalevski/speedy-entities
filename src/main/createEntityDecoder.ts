@@ -8,10 +8,15 @@ interface NamedCharRef {
 
 export interface EntityDecoderOptions {
   /**
-   * An entity manager that defines named entities.
+   * A map from a char reference name to its value. Char references, listed in this map, must be terminated with a
+   * semicolon.
    */
   namedCharRefs?: Record<string, string>;
 
+  /**
+   * A map from a char reference name to its value. Char references, listed in this map, would be still recognized,
+   * even if they aren't terminated with a semicolon.
+   */
   legacyNamedCharRefs?: Record<string, string>;
 
   /**
@@ -20,7 +25,7 @@ export interface EntityDecoderOptions {
    *
    * @default false
    */
-  numericCharRefTerminated?: boolean;
+  numericCharRefSemicolonRequired?: boolean;
 
   /**
    * If `true` then an error is thrown when an illegal code point is met. Otherwise, a {@link replacementChar} would be
@@ -49,7 +54,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
   const {
     namedCharRefs,
     legacyNamedCharRefs,
-    numericCharRefTerminated = false,
+    numericCharRefSemicolonRequired = false,
     illegalCodePointsForbidden = false,
     replacementChar = '\ufffd',
   } = options;
@@ -119,7 +124,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
         if (endIndex - startIndex >= 2) {
           const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59; /* ; */
 
-          if (terminated || !numericCharRefTerminated) {
+          if (terminated || !numericCharRefSemicolonRequired) {
             charRefValue = fromCodePoint(codePoint, replacementChar, illegalCodePointsForbidden);
           }
           if (terminated) {

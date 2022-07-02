@@ -14,7 +14,7 @@ export const xmlNamedCharRefs = {
  */
 export const decodeXml = createEntityDecoder({
   namedCharRefs: xmlNamedCharRefs,
-  numericCharRefTerminated: true,
+  numericCharRefSemicolonRequired: true,
 });
 
 export const encodeXml = createEntityEncoder({
