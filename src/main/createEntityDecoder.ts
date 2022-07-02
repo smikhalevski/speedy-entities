@@ -93,7 +93,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
           // parseInt of a decimal number
           while (endIndex - startIndex < 6 && endIndex < inputLength) {
-            charCode = input.charCodeAt(endIndex) | 0;
+            charCode = input.charCodeAt(endIndex);
 
             if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */) {
               codePoint = codePoint * 10 + charCode - (charCode & 112);
