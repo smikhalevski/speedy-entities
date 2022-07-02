@@ -39,4 +39,14 @@ describe('createEntityDecoder', () => {
 
     expect(decode('&#X61;&#x62;&#x63;')).toBe('abc');
   });
+
+  test('preserves invalid entities as is', () => {
+    const decode = createEntityDecoder();
+
+    expect(decode('&#;')).toBe('&#;');
+    expect(decode('&#x;')).toBe('&#x;');
+    expect(decode('&#X;')).toBe('&#X;');
+    expect(decode('&# ;')).toBe('&# ;');
+    expect(decode('&#Q;')).toBe('&#Q;');
+  });
 });
