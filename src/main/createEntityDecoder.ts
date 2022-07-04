@@ -1,10 +1,5 @@
 import { Trie, trieCreate, trieSearch, trieSet } from '@smikhalevski/trie';
 
-interface CharRef {
-  value: string;
-  legacy: boolean;
-}
-
 export interface Dict {
   [name: string]: string;
 }
@@ -142,17 +137,8 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
         const trie = trieSearch(charRefTrie, input, startIndex);
 
         if (trie !== null) {
+          charRefValue = trie.value!;
           endIndex += trie.key!.length;
-
-          const charRef = trie.value!;
-          const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59; /* ; */
-
-          if (terminated || charRef.legacy) {
-            charRefValue = charRef.value;
-          }
-          if (terminated) {
-            ++endIndex;
-          }
         }
       }
 
@@ -168,7 +154,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
   };
 }
 
-function appendCharRef(charRefs: Dict | undefined, legacy: boolean, trie: Trie<CharRef> | null): Trie<CharRef> | null {
+function appendCharRef(charRefs: Dict | undefined, legacy: boolean, trie: Trie<string> | null): Trie<string> | null {
   if (charRefs == null) {
     return trie;
   }
@@ -181,7 +167,11 @@ function appendCharRef(charRefs: Dict | undefined, legacy: boolean, trie: Trie<C
   trie ||= trieCreate();
 
   for (const [name, value] of entries) {
-    trieSet(trie, name, { value, legacy });
+    trieSet(trie, name + ';', value);
+
+    if (legacy) {
+      trieSet(trie, name, value);
+    }
   }
   return trie;
 }
