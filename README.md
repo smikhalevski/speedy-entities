@@ -1,6 +1,7 @@
 # speedy-entities&ensp;🏎💨&ensp;[![build](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml/badge.svg?branch=master&event=push)](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml)
 
-[The fastest](#performance) XML/HTML entity decoder that supports customizable named character references.
+[The fastest](#performance) XML/HTML entity encoder/decoder that supports customizable named character references in
+[13 kB gzipped](https://bundlephobia.com/package/speedy-entities).
 
 ```shell
 npm install --save-prod speedy-entities
@@ -8,7 +9,7 @@ npm install --save-prod speedy-entities
 
 # Usage
 
-[API documentation is available here.](https://smikhalevski.github.io/speedy-entities/)
+🔎 [API documentation is available here.](https://smikhalevski.github.io/speedy-entities/)
 
 ## Preconfigured decoders
 
@@ -80,13 +81,10 @@ Clone this repo and use `npm ci && npm run perf` to run the performance testsuit
 
 Results are in millions of operations per second. The higher number is better.
 
-|                               | speedy-entities <br/>`decodeXml` | [fb55/entities](https://github.com/fb55/entities) <br/>`decodeXML` | speedy-entities <br/>`decodeHtml` | [fb55/entities](https://github.com/fb55/entities) <br/>`decodeHTML` |
-|-------------------------------|---------------------------------:| ---: | ---: | ---: |
-| `"&#X61;&#x62;&#x63;"`        | 3.9 | 2.5 | 4.3 | 2.5 |
-| `"&#X61&#x62&#x63"`           | 5.1 | 2.7 | 4.3 | 2.4 |
-| `"&#97;&#98;&#99;"`           | 4.5 | 2.4 | 4.5 | 2.4 |
-| `"&#97&#98&#99"`              | 5.5 | 2.4 | 4.2 | 2.3 |
-| `"&amp;&lt;&gt;"`             | 3.8 | 3.3 | 3.7 | 3.1 |
-| `"&amp&lt&gt"`                | 3.6 | 3.4 | 3.6 | 3.3 |
-| `"&NotNestedGreaterGreater;"` | 5.3 | 4.6 | 3.9 | 3.2 |
-| `"&NotNestedGreaterGreater"`  | 5.3 | 4.6 | 3.9 | 3.3 |
+### Decode
+
+![Decode HTML performance chart](./images/perf-decode-html.svg)
+
+### Encode
+
+![Encode XML performance chart](./images/perf-encode-xml.svg)

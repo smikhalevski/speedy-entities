@@ -13,7 +13,7 @@ const valuesToDecode = [
   '&amp&lt&gt', // unterminated XML/legacy
   '&#x1f44a;&#x1f609;', // surrogate pair reference
   '&#x20AC;&#x2013;', // overridden char codes
-  '&unknown;', // unknown
+  '&unknown;&leftxx;', // unknown
   // '&#X61&#x62&#x63', // unterminated hex
   // '&#97&#98&#99', // unterminated decimal
 ];
@@ -23,7 +23,7 @@ const valuesToEncode = [
   'abc', // ASCII text, noop
   '<>&', // XML entity
   '\u00FF\u2A7D', // non-ASCII text
-  '\uD83D\uDE18', // surrogate pair
+  '😘🔥', // surrogate pairs
 ];
 
 describe(
