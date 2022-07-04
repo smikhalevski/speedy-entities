@@ -1,4 +1,4 @@
-import { decodeHtml, encodeHtml, escapeHtml } from '../main';
+import { decodeHtml } from '../main';
 
 describe('decodeHtml', () => {
   test('decodes terminated decimal entities', () => {
@@ -71,28 +71,5 @@ describe('decodeHtml', () => {
     expect(decodeHtml('&amp&lt&gt')).toBe('&<>');
     expect(decodeHtml('&NotNestedGreaterGreater;')).toBe('\u2AA2\u0338');
     expect(decodeHtml('&NotNestedGreaterGreater')).toBe('&NotNestedGreaterGreater');
-  });
-});
-
-describe('escapeHtml', () => {
-  test('encodes chars', () => {
-    expect(escapeHtml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
-  });
-
-  test('encodes code points', () => {
-    expect(escapeHtml('\u2269\uFE00')).toBe('&gvnE;');
-    expect(escapeHtml('\u2269')).toBe('&gneqq;');
-  });
-
-  test('does not encode ASCII', () => {
-    expect(escapeHtml('abc')).toBe('abc');
-  });
-});
-
-describe('encodeHtml', () => {
-  test('encodes UTF chars', () => {
-    expect(encodeHtml("über & unter's sprießende <boo> ❤️👊😉")).toBe(
-      '&uuml;ber &amp; unter&apos;s sprie&szlig;ende &lt;boo&gt; &#x2764;&#xfe0f;&#x1f44a;&#x1f609;'
-    );
   });
 });

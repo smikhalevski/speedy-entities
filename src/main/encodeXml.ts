@@ -5,7 +5,7 @@ export function encodeXml(input: string): string {
   let textIndex = 0;
 
   while (re.test(input)) {
-    let charRef;
+    let entity;
     let lastIndex = re.lastIndex;
 
     const startIndex = lastIndex - 1;
@@ -13,22 +13,22 @@ export function encodeXml(input: string): string {
 
     switch (codePoint) {
       case 34: // "
-        charRef = '&quot;';
+        entity = '&quot;';
         break;
       case 38: // &
-        charRef = '&amp;';
+        entity = '&amp;';
         break;
       case 39: // '
-        charRef = '&apos;';
+        entity = '&apos;';
         break;
       case 60: // <
-        charRef = '&lt;';
+        entity = '&lt;';
         break;
       case 62: // >
-        charRef = '&gt;';
+        entity = '&gt;';
         break;
       default:
-        charRef = '&#x' + codePoint.toString(16) + ';';
+        entity = '&#x' + codePoint.toString(16) + ';';
 
         if (codePoint > 0xffff) {
           re.lastIndex = ++lastIndex;
@@ -36,7 +36,7 @@ export function encodeXml(input: string): string {
         break;
     }
 
-    output += textIndex === startIndex ? charRef : input.slice(textIndex, startIndex) + charRef;
+    output += textIndex === startIndex ? entity : input.slice(textIndex, startIndex) + entity;
     textIndex = lastIndex;
   }
 

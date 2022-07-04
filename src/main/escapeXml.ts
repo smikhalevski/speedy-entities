@@ -5,30 +5,12 @@ export function escapeXml(input: string): string {
   let textIndex = 0;
 
   while (re.test(input)) {
-    let charRef;
-
     const lastIndex = re.lastIndex;
     const startIndex = lastIndex - 1;
+    const c = input.charCodeAt(startIndex);
+    const entity = c === 34 ? '&quot;' : c === 38 ? '&amp;' : c === 39 ? '&apos;' : c === 60 ? '&lt;' : '&gt;';
 
-    switch (input.charCodeAt(startIndex)) {
-      case 34: // "
-        charRef = '&quot;';
-        break;
-      case 38: // &
-        charRef = '&amp;';
-        break;
-      case 39: // '
-        charRef = '&apos;';
-        break;
-      case 60: // <
-        charRef = '&lt;';
-        break;
-      case 62: // >
-        charRef = '&gt;';
-        break;
-    }
-
-    output += textIndex === startIndex ? charRef : input.slice(textIndex, startIndex) + charRef;
+    output += textIndex === startIndex ? entity : input.slice(textIndex, startIndex) + entity;
     textIndex = lastIndex;
   }
 
