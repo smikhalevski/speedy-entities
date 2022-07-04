@@ -108,7 +108,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
             // https://github.com/mathiasbynens/he/blob/master/src/he.js#L106-L134
 
             if (codePoint === 0 || (codePoint >= 0xd800 && codePoint <= 0xdfff) || codePoint > 0x10ffff) {
-              // Character reference is 0, or outside the permissible Unicode range
+              // Null char code, or character reference is outside the permissible Unicode range
               entityValue = '\uFFFD';
             } else if (
               codePoint >= 128 &&
@@ -119,10 +119,15 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
               codePoint !== 144 &&
               codePoint !== 157
             ) {
-              // Overridden code point
+              // Overridden char code
               entityValue = entityOverrides[codePoint];
+            } else if (codePoint > 0xffff) {
+              // Surrogate pair
+              codePoint -= 0x10000;
+              entityValue = String.fromCharCode(((codePoint >>> 10) & 0x3ff) | 0xd800, 0xdc00 | (codePoint & 0x3ff));
             } else {
-              entityValue = String.fromCodePoint(codePoint);
+              // Char code
+              entityValue = String.fromCharCode(codePoint);
             }
           }
 
