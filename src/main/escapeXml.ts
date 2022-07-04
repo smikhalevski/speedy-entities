@@ -7,8 +7,10 @@ export function escapeXml(input: string): string {
   while (re.test(input)) {
     const lastIndex = re.lastIndex;
     const startIndex = lastIndex - 1;
-    const c = input.charCodeAt(startIndex);
-    const entity = c === 34 ? '&quot;' : c === 38 ? '&amp;' : c === 39 ? '&apos;' : c === 60 ? '&lt;' : '&gt;';
+    const charCode = input.charCodeAt(startIndex);
+
+    // prettier-ignore
+    const entity = charCode === 34 ? '&quot;' : charCode === 38 ? '&amp;' : charCode === 39 ? '&apos;' : charCode === 60 ? '&lt;' : '&gt;';
 
     output += textIndex === startIndex ? entity : input.slice(textIndex, startIndex) + entity;
     textIndex = lastIndex;

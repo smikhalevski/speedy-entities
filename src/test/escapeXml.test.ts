@@ -1,15 +1,19 @@
 import { escapeXml } from '../main';
 
 describe('escapeXml', () => {
-  test('encodes to names character references', () => {
+  test('encodes entities', () => {
     expect(escapeXml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
   });
 
-  test('does not encode UTF code points', () => {
-    expect(escapeXml('\u2269\uFE00')).toBe('\u2269\uFE00');
+  test('preserves ASCII text', () => {
+    expect(escapeXml('abc')).toBe('abc');
   });
 
-  test('does not encode ASCII', () => {
-    expect(escapeXml('abc')).toBe('abc');
+  test('encodes entities surrounded by text', () => {
+    expect(escapeXml('__&__')).toBe('__&amp;__');
+  });
+
+  test('does not encode surrogate pairs', () => {
+    expect(escapeXml('😘❤️')).toBe('😘❤️');
   });
 });

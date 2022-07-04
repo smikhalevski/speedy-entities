@@ -9,9 +9,9 @@ export function encodeXml(input: string): string {
     let lastIndex = re.lastIndex;
 
     const startIndex = lastIndex - 1;
-    const codePoint = input.codePointAt(startIndex)!;
+    const charCode = input.charCodeAt(startIndex);
 
-    switch (codePoint) {
+    switch (charCode) {
       case 34: // "
         entity = '&quot;';
         break;
@@ -28,11 +28,14 @@ export function encodeXml(input: string): string {
         entity = '&gt;';
         break;
       default:
-        entity = '&#x' + codePoint.toString(16) + ';';
+        let codePoint = charCode;
 
-        if (codePoint > 0xffff) {
+        if ((charCode & 0xfc00) === 0xd800) {
+          // Surrogate pair
+          codePoint = charCode * 0x400 + input.charCodeAt(lastIndex) - 0x35fdc00;
           re.lastIndex = ++lastIndex;
         }
+        entity = '&#x' + codePoint.toString(16) + ';';
         break;
     }
 

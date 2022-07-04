@@ -22,28 +22,28 @@ describe('createEntityDecoder', () => {
     expect(decode('&#x1D11E')).toBe('\uD834\uDD1E');
   });
 
-  test('code points are case-insensitive', () => {
+  test('supports numeric references', () => {
+    const decode = createEntityDecoder();
+
+    expect(decode('&#X61;&#x62;&#x63;')).toBe('abc');
+  });
+
+  test('numeric references are case-insensitive', () => {
     const decode = createEntityDecoder();
 
     expect(decode('&#X3C;')).toBe(decode('&#x3c;'));
   });
 
-  test('supports single digit char code', () => {
+  test('supports single digit numeric references', () => {
     const decode = createEntityDecoder();
 
     expect(decode('&#1;')).toBe('\u0001');
   });
 
-  test('supports illegal code points', () => {
+  test('renders illegal code points as a replacement character', () => {
     const decode = createEntityDecoder();
 
     expect(decode('&#X11FFFF;')).toBe('\uFFFd');
-  });
-
-  test('supports numeric entities', () => {
-    const decode = createEntityDecoder();
-
-    expect(decode('&#X61;&#x62;&#x63;')).toBe('abc');
   });
 
   test('preserves invalid entities as is', () => {
