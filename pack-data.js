@@ -17,8 +17,8 @@ function packEntries(entries) {
   return JSON.stringify(
     entries
       .map(([key, value]) => {
-        const raw = value.length === 1 ? value.charCodeAt(0) : value.charCodeAt(0) * 0xffff + value.charCodeAt(1);
-        return key + ' ' + raw.toString(36);
+        const code = value.length === 1 ? value.charCodeAt(0) : value.charCodeAt(0) * 0xffff + value.charCodeAt(1);
+        return key + ' ' + code.toString(36);
       })
       .join(' ')
   );
