@@ -1,26 +1,26 @@
 import htmlEntitiesData from './gen/html-entities.json';
 import legacyHtmlEntitiesData from './gen/legacy-html-entities.json';
 
-export const htmlEntities = unpackEntities(htmlEntitiesData, false, unpackEntities(legacyHtmlEntitiesData, true, {}));
+const fromCharCode = String.fromCharCode;
 
-/**
- * Unpacks a mapping packed at build time.
- */
-function unpackEntities(
-  data: string,
-  legacy: boolean,
-  entities: { [name: string]: string }
-): { [name: string]: string } {
-  const arr = data.split(' ');
+function unpackData(data: string, legacy: boolean, entities: { [name: string]: string }): { [name: string]: string } {
+  const tokens = data.split(' ');
 
-  for (let i = 0; i < arr.length; i += 2) {
-    const value = parseInt(arr[i + 1], 36);
-    const str = value > 0xffff ? String.fromCharCode(value / 0xffff, value % 0xffff) : String.fromCharCode(value);
-    entities[arr[i] + ';'] = str;
+  for (let i = 0; i < tokens.length; i += 2) {
+    const name = tokens[i];
+    const raw = parseInt(tokens[i + 1], 36);
+    const value = raw > 0xffff ? fromCharCode(raw / 0xffff, raw % 0xffff) : fromCharCode(raw);
 
+    entities[name + ';'] = value;
     if (legacy) {
-      entities[arr[i]] = str;
+      entities[name] = value;
     }
   }
   return entities;
 }
+
+/**
+ * The character reference names that are supported by HTML, and the code points to which they refer as listed in
+ * [Named character references section of WHATWG HTML Living Standard](https://html.spec.whatwg.org/multipage/named-characters.html).
+ */
+export const htmlEntities = unpackData(htmlEntitiesData, false, unpackData(legacyHtmlEntitiesData, true, {}));

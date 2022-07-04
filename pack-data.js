@@ -5,11 +5,11 @@ const legacyHtmlEntities = require('./src/main/data/legacy-html-entities.json');
 
 const genDir = path.join(__dirname, './src/main/gen');
 
-const modernHtmlEntities = Object.entries(htmlEntities).filter(([key]) => !legacyHtmlEntities[key]);
+const htmlEntityEntities = Object.entries(htmlEntities).filter(([key]) => !legacyHtmlEntities[key]);
 
 fs.mkdirSync(genDir, { recursive: true });
 
-fs.writeFileSync(path.join(genDir, 'html-entities.json'), packEntries(modernHtmlEntities));
+fs.writeFileSync(path.join(genDir, 'html-entities.json'), packEntries(htmlEntityEntities));
 
 fs.writeFileSync(path.join(genDir, 'legacy-html-entities.json'), packEntries(Object.entries(legacyHtmlEntities)));
 

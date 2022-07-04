@@ -7,8 +7,6 @@ export interface EntityDecoderOptions {
   /**
    * The map from an entity name to a corresponding value. An entity name must end with a semicolon when it is required.
    * So HTML legacy entities should be specified twice, with and without the terminating semicolon.
-   *
-   * @see https://html.spec.whatwg.org/multipage/named-characters.html Named character references section of WHATWG HTML Living Standard
    */
   entities?: { [name: string]: string };
 
