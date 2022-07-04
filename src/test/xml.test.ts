@@ -1,4 +1,4 @@
-import { decodeXml, encodeXml } from '../main';
+import { decodeXml, escapeXml } from '../main';
 
 describe('decodeXml', () => {
   test('decodes terminated decimal entities', () => {
@@ -65,16 +65,16 @@ describe('decodeXml', () => {
   });
 });
 
-describe('encodeXml', () => {
+describe('escapeXml', () => {
   test('encodes to names character references', () => {
-    expect(encodeXml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
+    expect(escapeXml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
   });
 
   test('does not encode UTF code points', () => {
-    expect(encodeXml('\u2269\uFE00')).toBe('\u2269\uFE00');
+    expect(escapeXml('\u2269\uFE00')).toBe('\u2269\uFE00');
   });
 
   test('does not encode ASCII', () => {
-    expect(encodeXml('abc')).toBe('abc');
+    expect(escapeXml('abc')).toBe('abc');
   });
 });

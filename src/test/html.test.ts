@@ -1,4 +1,4 @@
-import { decodeHtml, encodeAsciiHtml, encodeHtml } from '../main';
+import { decodeHtml, encodeHtml, escapeHtml } from '../main';
 
 describe('decodeHtml', () => {
   test('decodes terminated decimal entities', () => {
@@ -74,24 +74,24 @@ describe('decodeHtml', () => {
   });
 });
 
-describe('encodeHtml', () => {
+describe('escapeHtml', () => {
   test('encodes chars', () => {
-    expect(encodeHtml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
+    expect(escapeHtml('&\'<>"')).toBe('&amp;&apos;&lt;&gt;&quot;');
   });
 
   test('encodes code points', () => {
-    expect(encodeHtml('\u2269\uFE00')).toBe('&gvnE;');
-    expect(encodeHtml('\u2269')).toBe('&gneqq;');
+    expect(escapeHtml('\u2269\uFE00')).toBe('&gvnE;');
+    expect(escapeHtml('\u2269')).toBe('&gneqq;');
   });
 
   test('does not encode ASCII', () => {
-    expect(encodeHtml('abc')).toBe('abc');
+    expect(escapeHtml('abc')).toBe('abc');
   });
 });
 
-describe('encodeAsciiHtml', () => {
+describe('encodeHtml', () => {
   test('encodes UTF chars', () => {
-    expect(encodeAsciiHtml("über & unter's sprießende <boo> ❤️👊😉")).toBe(
+    expect(encodeHtml("über & unter's sprießende <boo> ❤️👊😉")).toBe(
       '&uuml;ber &amp; unter&apos;s sprie&szlig;ende &lt;boo&gt; &#x2764;&#xfe0f;&#x1f44a;&#x1f609;'
     );
   });

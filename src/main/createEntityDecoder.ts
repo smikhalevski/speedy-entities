@@ -1,23 +1,16 @@
 import { Trie, trieCreate, trieSearch, trieSet } from '@smikhalevski/trie';
 
-export interface Dict {
-  [name: string]: string;
-}
-
+/**
+ * The options recognized by {@link createEntityDecoder}.
+ */
 export interface EntityDecoderOptions {
   /**
-   * A map from a char reference name to its value. Char references, listed in this map, must be terminated with a
-   * semicolon.
+   * The map from an entity name to a corresponding value. An entity name must end with a semicolon when it is required.
+   * So HTML legacy entities should be specified twice, with and without the terminating semicolon.
    *
-   * @see https://www.w3.org/TR/2011/WD-html5-20110525/named-character-references.html Named character references on W3C
+   * @see https://html.spec.whatwg.org/multipage/named-characters.html Named character references section of WHATWG HTML Living Standard
    */
-  namedCharRefs?: Dict;
-
-  /**
-   * A map from a char reference name to its value. Char references, listed in this map, would be still recognized,
-   * even if they aren't terminated with a semicolon.
-   */
-  legacyNamedCharRefs?: Dict;
+  entities?: { [name: string]: string };
 
   /**
    * If `true` then numeric character references must be terminated with a semicolon to be decoded. Otherwise, numeric
@@ -25,7 +18,7 @@ export interface EntityDecoderOptions {
    *
    * @default false
    */
-  numericCharRefSemicolonRequired?: boolean;
+  numericReferenceSemicolonRequired?: boolean;
 }
 
 /**
@@ -35,9 +28,17 @@ export interface EntityDecoderOptions {
  * @returns A function that decodes entities in the string.
  */
 export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
-  const { namedCharRefs, legacyNamedCharRefs, numericCharRefSemicolonRequired = false } = options;
+  const { entities, numericReferenceSemicolonRequired = false } = options;
 
-  const charRefTrie = appendCharRef(legacyNamedCharRefs, true, appendCharRef(namedCharRefs, false, null));
+  let entityTrie: Trie<string> | null = null;
+
+  if (entities != null) {
+    entityTrie = trieCreate();
+
+    for (const [name, value] of Object.entries(entities)) {
+      trieSet(entityTrie, name, value);
+    }
+  }
 
   return input => {
     let output = '';
@@ -55,7 +56,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
       charIndex = startIndex++;
 
-      let charRefValue: string | null = null;
+      let entityValue: string | null = null;
       let endIndex = startIndex;
 
       if (startIndex < inputLength - 2 && input.charCodeAt(startIndex) === 35 /* # */) {
@@ -104,13 +105,13 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
           const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59; /* ; */
 
-          if (terminated || !numericCharRefSemicolonRequired) {
+          if (terminated || !numericReferenceSemicolonRequired) {
             // Convert a code point to a string
             // https://github.com/mathiasbynens/he/blob/master/src/he.js#L106-L134
 
             if (codePoint === 0 || (codePoint >= 0xd800 && codePoint <= 0xdfff) || codePoint > 0x10ffff) {
               // Character reference is 0, or outside the permissible Unicode range
-              charRefValue = '\uFFFD';
+              entityValue = '\uFFFD';
             } else if (
               codePoint >= 128 &&
               codePoint <= 195 &&
@@ -121,9 +122,9 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
               codePoint !== 157
             ) {
               // Overridden code point
-              charRefValue = overrides[codePoint];
+              entityValue = entityOverrides[codePoint];
             } else {
-              charRefValue = String.fromCodePoint(codePoint);
+              entityValue = String.fromCodePoint(codePoint);
             }
           }
 
@@ -131,20 +132,20 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
             ++endIndex;
           }
         }
-      } else if (charRefTrie !== null) {
+      } else if (entityTrie !== null) {
         // Named character reference
 
-        const trie = trieSearch(charRefTrie, input, startIndex);
+        const trie = trieSearch(entityTrie, input, startIndex);
 
         if (trie !== null) {
-          charRefValue = trie.value!;
+          entityValue = trie.value!;
           endIndex += trie.key!.length;
         }
       }
 
       // Concat decoded entity and preceding substring
-      if (charRefValue !== null) {
-        output += textIndex === charIndex ? charRefValue : input.slice(textIndex, charIndex) + charRefValue;
+      if (entityValue !== null) {
+        output += textIndex === charIndex ? entityValue : input.slice(textIndex, charIndex) + entityValue;
         textIndex = endIndex;
       }
 
@@ -154,31 +155,9 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
   };
 }
 
-function appendCharRef(charRefs: Dict | undefined, legacy: boolean, trie: Trie<string> | null): Trie<string> | null {
-  if (charRefs == null) {
-    return trie;
-  }
-
-  const entries = Object.entries(charRefs);
-  if (entries.length === 0) {
-    return trie;
-  }
-
-  trie ||= trieCreate();
-
-  for (const [name, value] of entries) {
-    trieSet(trie, name + ';', value);
-
-    if (legacy) {
-      trieSet(trie, name, value);
-    }
-  }
-  return trie;
-}
-
 // Standing on the shoulders of giants
 // https://github.com/mathiasbynens/he/blob/master/data/decode-map-overrides.json
-const overrides: { [codePoint: number]: string } = {
+const entityOverrides: { [codePoint: number]: string } = {
   128: '\u20AC',
   130: '\u201A',
   131: '\u0192',
