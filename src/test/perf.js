@@ -1,27 +1,29 @@
-const { escapeUTF8, encodeXML, decodeXML, decodeHTML } = require('entities');
-const { escapeXml, encodeXml, decodeXml, decodeHtml } = require('../../lib/index-cjs');
+const libSpeedyEntities = require('../../lib/index-cjs');
+const libEntities = require('entities');
+const libHtmlEntities = require('html-entities');
+const libHe = require('he');
 
 const valuesToDecode = [
-  '___&uuml;___&#x3f;___',
-  'abc', // ASCII text, noop
-  '&#x1f44a;&#x1f609;', // terminated code point
-  '&#x20AC;&#x2013;', // overridden char codes
+  // '___&uuml;___&#x3f;___',
+  'abc', // nothing to decode
+  '&gtrapprox;&LeftTee;', // terminated non-legacy HTML
   '&#X61;&#x62;&#x63;', // terminated hex
-  '&#X61&#x62&#x63', // unterminated hex
   '&#97;&#98;&#99;', // terminated decimal
-  '&#97&#98&#99', // unterminated decimal
   '&amp;&lt;&gt;', // terminated XML/legacy
   '&amp&lt&gt', // unterminated XML/legacy
-  '&NotNestedGreaterGreater;', // terminated non-legacy HTML
-  '&NotNestedGreaterGreater', // unterminated non-legacy HTML, unrecognized
+  '&#x1f44a;&#x1f609;', // surrogate pair reference
+  '&#x20AC;&#x2013;', // overridden char codes
+  '&unknown;', // unknown
+  // '&#X61&#x62&#x63', // unterminated hex
+  // '&#97&#98&#99', // unterminated decimal
 ];
 
 const valuesToEncode = [
-  '___ü___😘❤️___&<>___',
+  // '___ü___😘❤️___&<>___',
   'abc', // ASCII text, noop
-  '<>&', // legacy entity
-  '\u00FF', // non-legacy entity
-  '\u2269\uFE00', // code point
+  '<>&', // XML entity
+  '\u00FF\u2A7D', // non-ASCII text
+  '\uD83D\uDE18', // surrogate pair
 ];
 
 describe(
@@ -31,13 +33,30 @@ describe(
       describe(value, () => {
         test('speedy-entities', measure => {
           measure(() => {
-            decodeHtml(value);
+            libSpeedyEntities.decodeHtml(value);
           });
         });
 
-        test('fb55/entities', measure => {
+        test('entities', measure => {
           measure(() => {
-            decodeHTML(value);
+            libEntities.decodeHTML(value);
+          });
+        });
+
+        test('html-entities', measure => {
+          const options = {
+            level: 'html5',
+            scope: 'body',
+          };
+
+          measure(() => {
+            libHtmlEntities.decode(value, options);
+          });
+        });
+
+        test('he', measure => {
+          measure(() => {
+            libHe.decode(value);
           });
         });
       });
@@ -53,13 +72,30 @@ describe(
       describe(value, () => {
         test('speedy-entities', measure => {
           measure(() => {
-            decodeXml(value);
+            libSpeedyEntities.decodeXml(value);
           });
         });
 
-        test('fb55/entities', measure => {
+        test('entities', measure => {
           measure(() => {
-            decodeXML(value);
+            libEntities.decodeXML(value);
+          });
+        });
+
+        test('html-entities', measure => {
+          measure(() => {
+            const options = {
+              level: 'xml',
+              strict: true,
+            };
+
+            libHtmlEntities.decode(value, options);
+          });
+        });
+
+        test('he', measure => {
+          measure(() => {
+            libHe.decode(value);
           });
         });
       });
@@ -75,13 +111,30 @@ describe(
       describe(value, () => {
         test('speedy-entities', measure => {
           measure(() => {
-            encodeXml(value);
+            libSpeedyEntities.encodeXml(value);
           });
         });
 
-        test('fb55/entities', measure => {
+        test('entities', measure => {
           measure(() => {
-            encodeXML(value);
+            libEntities.encodeXML(value);
+          });
+        });
+
+        test('html-entities', measure => {
+          const options = {
+            level: 'xml',
+            mode: 'nonAscii',
+          };
+
+          measure(() => {
+            libHtmlEntities.encode(value, options);
+          });
+        });
+
+        test('he', measure => {
+          measure(() => {
+            libHe.encode(value);
           });
         });
       });
@@ -97,13 +150,30 @@ describe(
       describe(value, () => {
         test('speedy-entities', measure => {
           measure(() => {
-            escapeXml(value);
+            libSpeedyEntities.escapeXml(value);
           });
         });
 
-        test('fb55/entities', measure => {
+        test('entities', measure => {
           measure(() => {
-            escapeUTF8(value);
+            libEntities.escapeUTF8(value);
+          });
+        });
+
+        test('html-entities', measure => {
+          const options = {
+            level: 'xml',
+            mode: 'specialChars',
+          };
+
+          measure(() => {
+            libHtmlEntities.encode(value, options);
+          });
+        });
+
+        test('he', measure => {
+          measure(() => {
+            libHe.escape(value);
           });
         });
       });
