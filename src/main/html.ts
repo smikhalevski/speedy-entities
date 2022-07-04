@@ -1,13 +1,5 @@
-import { createEntityDecoder } from './createEntityDecoder';
 import { createEntityEncoder } from './createEntityEncoder';
 import { htmlEntities } from './htmlEntities';
-
-/**
- * Decodes all known HTML entities and numeric character references in the input.
- */
-export const decodeHtml = createEntityDecoder({
-  entities: htmlEntities,
-});
 
 /**
  * Encodes HTML entities in the input with corresponding named character references.
