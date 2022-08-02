@@ -43,22 +43,22 @@ describe(
           });
         });
 
-        test('html-entities', measure => {
-          const options = {
-            level: 'html5',
-            scope: 'body',
-          };
-
-          measure(() => {
-            libHtmlEntities.decode(value, options);
-          });
-        });
-
-        test('he', measure => {
-          measure(() => {
-            libHe.decode(value);
-          });
-        });
+        // test('html-entities', measure => {
+        //   const options = {
+        //     level: 'html5',
+        //     scope: 'body',
+        //   };
+        //
+        //   measure(() => {
+        //     libHtmlEntities.decode(value, options);
+        //   });
+        // });
+        //
+        // test('he', measure => {
+        //   measure(() => {
+        //     libHe.decode(value);
+        //   });
+        // });
       });
     }
   },
@@ -82,22 +82,22 @@ describe(
           });
         });
 
-        test('html-entities', measure => {
-          measure(() => {
-            const options = {
-              level: 'xml',
-              strict: true,
-            };
-
-            libHtmlEntities.decode(value, options);
-          });
-        });
-
-        test('he', measure => {
-          measure(() => {
-            libHe.decode(value);
-          });
-        });
+        // test('html-entities', measure => {
+        //   measure(() => {
+        //     const options = {
+        //       level: 'xml',
+        //       strict: true,
+        //     };
+        //
+        //     libHtmlEntities.decode(value, options);
+        //   });
+        // });
+        //
+        // test('he', measure => {
+        //   measure(() => {
+        //     libHe.decode(value);
+        //   });
+        // });
       });
     }
   },
@@ -121,22 +121,22 @@ describe(
           });
         });
 
-        test('html-entities', measure => {
-          const options = {
-            level: 'xml',
-            mode: 'nonAscii',
-          };
-
-          measure(() => {
-            libHtmlEntities.encode(value, options);
-          });
-        });
-
-        test('he', measure => {
-          measure(() => {
-            libHe.encode(value);
-          });
-        });
+        // test('html-entities', measure => {
+        //   const options = {
+        //     level: 'xml',
+        //     mode: 'nonAscii',
+        //   };
+        //
+        //   measure(() => {
+        //     libHtmlEntities.encode(value, options);
+        //   });
+        // });
+        //
+        // test('he', measure => {
+        //   measure(() => {
+        //     libHe.encode(value);
+        //   });
+        // });
       });
     }
   },
@@ -160,22 +160,22 @@ describe(
           });
         });
 
-        test('html-entities', measure => {
-          const options = {
-            level: 'xml',
-            mode: 'specialChars',
-          };
-
-          measure(() => {
-            libHtmlEntities.encode(value, options);
-          });
-        });
-
-        test('he', measure => {
-          measure(() => {
-            libHe.escape(value);
-          });
-        });
+        // test('html-entities', measure => {
+        //   const options = {
+        //     level: 'xml',
+        //     mode: 'specialChars',
+        //   };
+        //
+        //   measure(() => {
+        //     libHtmlEntities.encode(value, options);
+        //   });
+        // });
+        //
+        // test('he', measure => {
+        //   measure(() => {
+        //     libHe.escape(value);
+        //   });
+        // });
       });
     }
   },

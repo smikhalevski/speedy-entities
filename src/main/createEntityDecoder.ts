@@ -1,5 +1,7 @@
 import { Trie, trieCreate, trieSearch, trieSet } from '@smikhalevski/trie';
 
+const fromCharCode = String.fromCharCode;
+
 /**
  * The options recognized by {@link createEntityDecoder}.
  */
@@ -124,10 +126,10 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
             } else if (codePoint > 0xffff) {
               // Surrogate pair
               codePoint -= 0x10000;
-              entityValue = String.fromCharCode(((codePoint >>> 10) & 0x3ff) | 0xd800, 0xdc00 | (codePoint & 0x3ff));
+              entityValue = fromCharCode(((codePoint >>> 10) & 0x3ff) | 0xd800, 0xdc00 | (codePoint & 0x3ff));
             } else {
               // Char code
-              entityValue = String.fromCharCode(codePoint);
+              entityValue = fromCharCode(codePoint);
             }
           }
 

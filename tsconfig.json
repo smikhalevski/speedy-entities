@@ -1,4 +1,9 @@
 {
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  },
   "compilerOptions": {
     "declaration": true,
     "esModuleInterop": true,
@@ -8,13 +13,13 @@
     "strict": true,
     "target": "ES5",
     "module": "ES6",
-    "rootDir": "./src/main",
+    "rootDir": "./src",
     "outDir": "./lib",
     "lib": [
       "ES7"
     ]
   },
   "include": [
-    "./src/main/**/*"
+    "./src/**/*"
   ]
 }

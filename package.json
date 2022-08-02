@@ -10,13 +10,14 @@
     "lib"
   ],
   "scripts": {
-    "build": "node pack-data.js && tsc && rimraf './lib/CharCode.*' && rollup --external @smikhalevski/trie --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-json",
+    "build": "node pack-data.js && tsc --project ./tsconfig.build.json && rimraf './lib/CharCode.*' && rollup --external @smikhalevski/trie --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-json",
     "prettier": "prettier --write './src/**/*.{js,ts,tsx}'",
     "clean": "rimraf './src/main/gen' './lib' './docs'",
     "test": "jest",
     "perf": "[ -d ./lib ] || npm run build && toofast ./src/test/perf.js",
     "docs:build": "typedoc './src/main/index.ts'",
-    "docs:release": "npm run docs:build && SHA=$(git rev-parse --short HEAD) && ORIGIN=$(git config --get remote.origin.url) && TEMP=$(mktemp -d) && git clone -b ghpages --single-branch $ORIGIN $TEMP && ls -A $TEMP | grep -wv .git | xargs rm -rf && cp -R ./docs/ $TEMP && cd $TEMP && git add . && git commit -m \"Updated docs ($SHA)\" && git push && rm -rf $TEMP"
+    "docs:release": "npm run docs:build && SHA=$(git rev-parse --short HEAD) && ORIGIN=$(git config --get remote.origin.url) && TEMP=$(mktemp -d) && git clone -b ghpages --single-branch $ORIGIN $TEMP && ls -A $TEMP | grep -wv .git | xargs rm -rf && cp -R ./docs/ $TEMP && cd $TEMP && git add . && git commit -m \"Updated docs ($SHA)\" && git push && rm -rf $TEMP",
+    "foo": "ts-node src/scripts/encode-entities.ts"
   },
   "repository": {
     "type": "git",
@@ -47,6 +48,7 @@
     "rollup": "^2.74.1",
     "toofast": "^1.3.1",
     "ts-jest": "^27.1.3",
+    "ts-node": "^10.9.1",
     "typedoc": "^0.22.15",
     "typescript": "^4.7.2"
   },
