@@ -1,11 +1,10 @@
 import { createEntityDecoder } from './createEntityDecoder';
-import { htmlEntities } from './htmlEntities';
-import asd from './html-entities.json';
+import htmlEntities from './gen/html-entities';
 
 /**
  * Decodes all known HTML entities and numeric character references in the input.
  */
-export const decodeHtml = createEntityDecoder({
+export const decodeHTML = createEntityDecoder({
   entities: htmlEntities,
-  asd,
-} as any);
+  numericReferenceSemicolonRequired: false,
+});

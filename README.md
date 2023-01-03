@@ -4,7 +4,7 @@
 [13 kB gzipped](https://bundlephobia.com/package/speedy-entities).
 
 ```shell
-npm install --save-prod speedy-entities
+npm install --save-prod speedy-htmlEntities
 ```
 
 # Usage
@@ -13,29 +13,29 @@ npm install --save-prod speedy-entities
 
 ## Preconfigured decoders
 
-There are two preconfigured decoders: `decodeXml` and `decodeHtml`.
+There are two preconfigured decoders: `decodeXML` and `decodeHTML`.
 
 ```ts
-import {decodeXml, decodeHtml} from 'speedy-entities';
+import {decodeXML, decodeHTML} from 'speedy-entities';
 
-decodeXml('&#X61;&#98;&lt;'); // → "ab&lt"
+decodeXML('&#X61;&#98;&lt;'); // → "ab&lt"
 
-decodeHtml('&ltfoo&AElig'); // → "<foo\u00c6"
+decodeHTML('&ltfoo&AElig'); // → "<foo\u00c6"
 
-decodeHtml('&NotNestedGreaterGreater;&CounterClockwiseContourIntegral;');
+decodeHTML('&NotNestedGreaterGreater;&CounterClockwiseContourIntegral;');
 // → "\u2aa2\u0338\u2233"
 ```
 
-You can add custom entities that `decodeXml` and `decodeHtml` would recognize:
+You can add custom entities that `decodeXML` and `decodeHTML` would recognize:
 
 ```ts
-import {decodeXml, decodeHtml, xmlEntityManager, htmlEntityManager} from 'speedy-entities';
+import {decodeXML, decodeHTML, xmlEntityManager, htmlEntityManager} from 'speedy-entities';
 
 xmlEntityManager.set('foo', 'okay');
-decodeXml('&foo;'); // → "okay"
+decodeXML('&foo;'); // → "okay"
 
 htmlEntityManager.set('bar', 'nope');
-decodeHtml('&bar;'); // → "nope"
+decodeHTML('&bar;'); // → "nope"
 ```
 
 ## Custom decoders

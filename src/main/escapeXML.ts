@@ -1,6 +1,6 @@
 const re = /["&'<>]/g;
 
-export function escapeXml(input: string): string {
+export function escapeXML(input: string): string {
   let output = '';
   let textIndex = 0;
 

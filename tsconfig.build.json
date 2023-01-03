@@ -1,7 +1,9 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "rootDir": "./src/main"
+    "declaration": true,
+    "rootDir": "./src/main",
+    "outDir": "./lib"
   },
   "include": [
     "./src/main/**/*"

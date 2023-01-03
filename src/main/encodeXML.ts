@@ -1,6 +1,6 @@
 const re = /["&'<>\u0080-\uffff]/g;
 
-export function encodeXml(input: string): string {
+export function encodeXML(input: string): string {
   let output = '';
   let textIndex = 0;
 

@@ -1,6 +1,8 @@
-import { Trie, trieCreate, trieSearch, trieSet } from '@smikhalevski/trie';
+import { ArrayTrie, arrayTrieSearch, ArrayTrieSearchResult } from '@smikhalevski/trie';
 
 const fromCharCode = String.fromCharCode;
+
+const result: ArrayTrieSearchResult<string> = { value: '', endIndex: -1 };
 
 /**
  * The options recognized by {@link createEntityDecoder}.
@@ -10,7 +12,7 @@ export interface EntityDecoderOptions {
    * The map from an entity name to a corresponding value. An entity name must end with a semicolon when it is required.
    * So HTML legacy entities should be specified twice, with and without the terminating semicolon.
    */
-  entities?: { [name: string]: string };
+  entities?: ArrayTrie<string>;
 
   /**
    * If `true` then numeric character references must be terminated with a semicolon to be decoded. Otherwise, numeric
@@ -27,18 +29,8 @@ export interface EntityDecoderOptions {
  * @param options The decoder options.
  * @returns A function that decodes entities in the string.
  */
-export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
+export function createEntityDecoder(options: EntityDecoderOptions): (input: string) => string {
   const { entities, numericReferenceSemicolonRequired = false } = options;
-
-  let entityTrie: Trie<string> | null = null;
-
-  if (entities != null) {
-    entityTrie = trieCreate();
-
-    for (const [name, value] of Object.entries(entities)) {
-      trieSet(entityTrie, name, value);
-    }
-  }
 
   return input => {
     let output = '';
@@ -137,14 +129,12 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
             ++endIndex;
           }
         }
-      } else if (entityTrie !== null) {
+      } else if (entities !== undefined) {
         // Named character reference
 
-        const trie = trieSearch(entityTrie, input, startIndex);
-
-        if (trie !== null) {
-          entityValue = trie.value!;
-          endIndex += trie.key!.length;
+        if (arrayTrieSearch(entities, input, result, startIndex, inputLength)) {
+          entityValue = result.value;
+          endIndex = result.endIndex;
         }
       }
 

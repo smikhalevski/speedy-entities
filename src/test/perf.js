@@ -27,7 +27,7 @@ const valuesToEncode = [
 ];
 
 describe(
-  'decodeHtml',
+  'decodeHTML',
   () => {
     for (const value of valuesToDecode) {
       describe(value, () => {
@@ -66,7 +66,7 @@ describe(
 );
 
 describe(
-  'decodeXml',
+  'decodeXML',
   () => {
     for (const value of valuesToDecode) {
       describe(value, () => {
@@ -105,7 +105,7 @@ describe(
 );
 
 describe(
-  'encodeXml',
+  'encodeXML',
   () => {
     for (const value of valuesToEncode) {
       describe(value, () => {
@@ -144,7 +144,7 @@ describe(
 );
 
 describe(
-  'escapeXml',
+  'escapeXML',
   () => {
     for (const value of valuesToEncode) {
       describe(value, () => {

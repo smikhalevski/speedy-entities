@@ -1,15 +1,10 @@
 import { createEntityDecoder } from './createEntityDecoder';
+import xmlEntities from './gen/xml-entities';
 
 /**
  * Decodes XML entities and numeric character references in the input.
  */
-export const decodeXml = createEntityDecoder({
-  entities: {
-    'amp;': '&',
-    'apos;': "'",
-    'gt;': '>',
-    'lt;': '<',
-    'quot;': '"',
-  },
+export const decodeXML = createEntityDecoder({
+  entities: xmlEntities,
   numericReferenceSemicolonRequired: true,
 });
