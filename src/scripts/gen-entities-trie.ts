@@ -16,14 +16,16 @@ for (const [entity, value] of Object.entries(xmlEntities)) {
   trieSet(xmlEntitiesTrie, entity.slice(1), value);
 }
 
-const htmlEntitiesArrayTrie = arrayTrieEncode(htmlEntitiesTrie);
-
-const xmlEntitiesArrayTrie = arrayTrieEncode(xmlEntitiesTrie);
-
 const dir = path.resolve(__dirname, '../main/gen');
 
 fs.mkdirSync(dir, { recursive: true });
 
-fs.writeFileSync(path.join(dir, 'html-entities-trie.ts'), 'export default ' + JSON.stringify(htmlEntitiesArrayTrie));
+fs.writeFileSync(
+  path.join(dir, 'htmlEntitiesTrie.ts'),
+  'export default ' + JSON.stringify(arrayTrieEncode(htmlEntitiesTrie))
+);
 
-fs.writeFileSync(path.join(dir, 'xml-entities-trie.ts'), 'export default ' + JSON.stringify(xmlEntitiesArrayTrie));
+fs.writeFileSync(
+  path.join(dir, 'xmlEntitiesTrie.ts'),
+  'export default ' + JSON.stringify(arrayTrieEncode(xmlEntitiesTrie))
+);

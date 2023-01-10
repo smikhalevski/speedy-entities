@@ -1,10 +1,10 @@
 import { createEntityDecoder } from './createEntityDecoder';
-import entitiesTrie from './gen/xml-entities-trie';
+import xmlEntitiesTrie from './gen/xmlEntitiesTrie';
 
 /**
  * Decodes XML entities and numeric character references in the input.
  */
 export const decodeXML = createEntityDecoder({
-  entitiesTrie,
+  entitiesTrie: xmlEntitiesTrie,
   numericReferenceSemicolonRequired: true,
 });
