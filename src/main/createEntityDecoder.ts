@@ -2,17 +2,16 @@ import { ArrayTrie, arrayTrieSearch, ArrayTrieSearchResult } from '@smikhalevski
 
 const fromCharCode = String.fromCharCode;
 
-const result: ArrayTrieSearchResult<string> = { value: '', endIndex: -1 };
+const searchResult: ArrayTrieSearchResult<string> = { value: '', lastIndex: 0 };
 
 /**
- * The options recognized by {@link createEntityDecoder}.
+ * The options recognized by {@linkcode createEntityDecoder}.
  */
 export interface EntityDecoderOptions {
   /**
-   * The map from an entity name to a corresponding value. An entity name must end with a semicolon when it is required.
-   * So HTML legacy entities should be specified twice, with and without the terminating semicolon.
+   * The trie of named entities.
    */
-  entities?: ArrayTrie<string>;
+  entitiesTrie?: ArrayTrie<string>;
 
   /**
    * If `true` then numeric character references must be terminated with a semicolon to be decoded. Otherwise, numeric
@@ -29,8 +28,8 @@ export interface EntityDecoderOptions {
  * @param options The decoder options.
  * @returns A function that decodes entities in the string.
  */
-export function createEntityDecoder(options: EntityDecoderOptions): (input: string) => string {
-  const { entities, numericReferenceSemicolonRequired = false } = options;
+export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
+  const { entitiesTrie, numericReferenceSemicolonRequired = false } = options;
 
   return input => {
     let output = '';
@@ -129,12 +128,11 @@ export function createEntityDecoder(options: EntityDecoderOptions): (input: stri
             ++endIndex;
           }
         }
-      } else if (entities !== undefined) {
+      } else if (entitiesTrie !== undefined) {
         // Named character reference
-
-        if (arrayTrieSearch(entities, input, result, startIndex, inputLength)) {
-          entityValue = result.value;
-          endIndex = result.endIndex;
+        if (arrayTrieSearch(entitiesTrie, input, startIndex, inputLength, searchResult) !== null) {
+          entityValue = searchResult.value;
+          endIndex = searchResult.lastIndex;
         }
       }
 

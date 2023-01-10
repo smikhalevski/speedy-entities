@@ -1,13 +1,16 @@
 import { createEntityDecoder } from '../main';
+import { arrayTrieEncode, trieCreate, trieSet } from '@smikhalevski/trie';
 
 describe('createEntityDecoder', () => {
   test('supports arbitrary named entities', () => {
+    const trie = trieCreate<string>();
+
+    trieSet(trie, 'foo;', 'okay');
+    trieSet(trie, 'bar;', 'nope');
+    trieSet(trie, 'bar', 'nope');
+
     const decode = createEntityDecoder({
-      entities: {
-        'foo;': 'okay',
-        'bar;': 'nope',
-        bar: 'nope',
-      },
+      entitiesTrie: arrayTrieEncode(trie),
     });
 
     expect(decode('&foo;')).toBe('okay');

@@ -1,10 +1,10 @@
 import { createEntityDecoder } from './createEntityDecoder';
-import htmlEntities from './gen/html-entities';
+import entitiesTrie from './gen/html-entities-trie';
 
 /**
  * Decodes all known HTML entities and numeric character references in the input.
  */
 export const decodeHTML = createEntityDecoder({
-  entities: htmlEntities,
+  entitiesTrie,
   numericReferenceSemicolonRequired: false,
 });
