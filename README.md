@@ -7,7 +7,11 @@
 npm install --save-prod speedy-entities
 ```
 
-# Decode
+# Usage
+
+🔎 [API documentation is available here.](https://smikhalevski.github.io/speedy-entities/)
+
+## Decode
 
 There are two preconfigured decoders: `decodeXML` and `decodeHTML`.
 
@@ -24,7 +28,7 @@ decodeHTML('&NotNestedGreaterGreater;&CounterClockwiseContourIntegral;');
 // ⮕ '\u2aa2\u0338\u2233'
 ```
 
-## Custom decoder
+### Custom decoder
 
 You can create a custom decoder that would custom named entities.
 
@@ -60,7 +64,7 @@ decode('&#X61;&#x62;&#x63;');
 // ⮕ 'abc'
 ```
 
-# Encode
+## Encode
 
 `encodeXML` encodes non-ASCII characters as named XML entities or as numeric references.
 
