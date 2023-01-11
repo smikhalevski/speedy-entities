@@ -1,76 +1,62 @@
-const { encodeXML, encodeHTML, decodeXML, decodeHTML } = require('entities');
-const { encodeXml, encodeHtml, decodeXml, decodeHtml } = require('../../lib/index-cjs');
+const lib = require('../../lib');
+const entities = require('entities');
+const htmlEntities = require('html-entities');
+const he = require('he');
 
 const valuesToDecode = [
-  'abc', // ASCII text
-  '&#X61;&#x62;&#x63;', // terminated hex
-  '&#X61&#x62&#x63', // unterminated hex
-  '&#97;&#98;&#99;', // terminated decimal
-  '&#97&#98&#99', // unterminated decimal
+  '___&uuml;___&#x3f;___',
+  'abc', // nothing to decode
+  '&gtrapprox;&LeftTee;', // terminated non-legacy HTML
   '&amp;&lt;&gt;', // terminated XML/legacy
   '&amp&lt&gt', // unterminated XML/legacy
-  '&NotNestedGreaterGreater;', // terminated non-legacy HTML
-  '&NotNestedGreaterGreater', // unterminated non-legacy HTML
-  '&NotNestedGreaterGreate', // unrecognized entity
+  '&#x1f44a;&#x1f609;', // surrogate pair reference
+  '&#x20AC;&#x2013;', // overridden char codes
+  '&unknown;&leftxx;', // unknown
+  '&#X61;&#x62;&#x63;', // terminated hex
+  '&#97;&#98;&#99;', // terminated decimal
+  // '&#X61&#x62&#x63', // unterminated hex
+  // '&#97&#98&#99', // unterminated decimal
 ];
 
 const valuesToEncode = [
-  'abc', // ASCII text
-  '<>&', // numeric character reference
-  '\u00FF', // named character reference
-  '\u2269\uFE00', // code point, named character reference
+  // '___ü___😘❤️___&<>___',
+  'abc', // ASCII text, noop
+  '<>&', // XML entity
+  '\u00FF\u2A7D', // non-ASCII text
+  '😘🔥', // surrogate pairs
 ];
 
-// describe('orig test', () => {
-//   const textToDecode = `This is a simple text &uuml;ber &#x3f; something.`;
-//
-//   test('speedy-entities', (measure) => {
-//     measure(() => {
-//       decodeHtml(textToDecode);
-//     });
-//   });
-//
-//   test('fb55/entities', (measure) => {
-//     measure(() => {
-//       decodeHTML(textToDecode);
-//     });
-//   });
-// }, {warmupIterationCount: 100, targetRme: 0.002});
-
-// describe('Average across ' + values.length + ' samples', () => {
-//
-//   test('speedy-entities', (measure) => {
-//     values.forEach((value) => {
-//       measure(() => {
-//         decodeXml(value);
-//       });
-//     });
-//   });
-//
-//   test('fb55/entities', (measure) => {
-//     values.forEach((value) => {
-//       measure(() => {
-//         decodeXML(value);
-//       });
-//     });
-//   });
-//
-// }, {warmupIterationCount: 1_000, targetRme: 0});
-
 describe(
-  'Decode XML',
+  'decodeHTML',
   () => {
     for (const value of valuesToDecode) {
       describe(value, () => {
         test('speedy-entities', measure => {
           measure(() => {
-            decodeXml(value);
+            lib.decodeHTML(value);
           });
         });
 
-        test('fb55/entities', measure => {
+        test('entities', measure => {
           measure(() => {
-            decodeXML(value);
+            entities.decodeHTML(value);
+          });
+        });
+
+        test('html-entities', measure => {
+          const options = {
+            level: 'html5',
+            scope: 'body',
+          };
+
+          measure(() => {
+            htmlEntities.decode(value, options);
+          });
+        });
+
+        test('he', measure => {
+          measure(() => {
+            he.decode(value);
           });
         });
       });
@@ -80,41 +66,36 @@ describe(
 );
 
 describe(
-  'Decode HTML',
+  'decodeXML',
   () => {
     for (const value of valuesToDecode) {
       describe(value, () => {
         test('speedy-entities', measure => {
           measure(() => {
-            decodeHtml(value);
+            lib.decodeXML(value);
           });
         });
 
-        test('fb55/entities', measure => {
+        test('entities', measure => {
           measure(() => {
-            decodeHTML(value);
-          });
-        });
-      });
-    }
-  },
-  { warmupIterationCount: 100, targetRme: 0.002 }
-);
-
-describe(
-  'Encode XML',
-  () => {
-    for (const value of valuesToEncode) {
-      describe(value, () => {
-        test('speedy-entities', measure => {
-          measure(() => {
-            encodeXml(value);
+            entities.decodeXML(value);
           });
         });
 
-        test('fb55/entities', measure => {
+        test('html-entities', measure => {
+          const options = {
+            level: 'xml',
+            strict: true,
+          };
+
           measure(() => {
-            encodeXML(value);
+            htmlEntities.decode(value, options);
+          });
+        });
+
+        test('he', measure => {
+          measure(() => {
+            he.decode(value);
           });
         });
       });
@@ -124,19 +105,75 @@ describe(
 );
 
 describe(
-  'Encode HTML',
+  'encodeXML',
   () => {
     for (const value of valuesToEncode) {
       describe(value, () => {
         test('speedy-entities', measure => {
           measure(() => {
-            encodeHtml(value);
+            lib.encodeXML(value);
           });
         });
 
-        test('fb55/entities', measure => {
+        test('entities', measure => {
           measure(() => {
-            encodeHTML(value);
+            entities.encodeXML(value);
+          });
+        });
+
+        test('html-entities', measure => {
+          const options = {
+            level: 'xml',
+            mode: 'nonAscii',
+          };
+
+          measure(() => {
+            htmlEntities.encode(value, options);
+          });
+        });
+
+        test('he', measure => {
+          measure(() => {
+            he.encode(value);
+          });
+        });
+      });
+    }
+  },
+  { warmupIterationCount: 100, targetRme: 0.002 }
+);
+
+describe(
+  'escapeXML',
+  () => {
+    for (const value of valuesToEncode) {
+      describe(value, () => {
+        test('speedy-entities', measure => {
+          measure(() => {
+            lib.escapeXML(value);
+          });
+        });
+
+        test('entities', measure => {
+          measure(() => {
+            entities.escapeUTF8(value);
+          });
+        });
+
+        test('html-entities', measure => {
+          const options = {
+            level: 'xml',
+            mode: 'specialChars',
+          };
+
+          measure(() => {
+            htmlEntities.encode(value, options);
+          });
+        });
+
+        test('he', measure => {
+          measure(() => {
+            he.escape(value);
           });
         });
       });
