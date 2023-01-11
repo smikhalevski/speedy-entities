@@ -54,6 +54,6 @@
     "typescript": "^4.9.4"
   },
   "dependencies": {
-    "@smikhalevski/trie": "^2.1.0"
+    "@smikhalevski/trie": "^2.2.0"
   }
 }

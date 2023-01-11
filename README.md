@@ -1,7 +1,7 @@
 # speedy-entities&ensp;🏎💨&ensp;[![build](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml/badge.svg?branch=master&event=push)](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml)
 
-[The fastest](#performance) XML/HTML entity encoder/decoder that supports customizable named character references in
-[13 kB gzipped](https://bundlephobia.com/package/speedy-entities).
+[The fastest](#performance) XML/HTML entity encoder/decoder in
+[23 kB gzipped](https://bundlephobia.com/package/speedy-entities).
 
 ```shell
 npm install --save-prod speedy-entities
@@ -30,7 +30,7 @@ decodeHTML('&NotNestedGreaterGreater;&CounterClockwiseContourIntegral;');
 
 ### Custom decoder
 
-You can create a custom decoder that would custom named entities.
+You can create a decoder that decodes custom named entities:
 
 ```ts
 import { arrayTrieEncode, trieCreate, trieSet } from '@smikhalevski/trie';
