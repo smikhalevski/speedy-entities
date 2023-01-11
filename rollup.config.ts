@@ -25,7 +25,6 @@ export default [
       file: './lib/index.d.ts',
       format: 'es',
     },
-    external: Object.keys(packageJson.dependencies),
     plugins: [dts()],
   },
 ];

@@ -9,13 +9,14 @@ const searchResult: ArrayTrieSearchResult<string> = { value: '', lastIndex: 0 };
  */
 export interface EntityDecoderOptions {
   /**
-   * The trie of named entities.
+   * The trie of [character entity references](https://www.w3.org/TR/html4/charset.html#h-5.3.2).
    */
   entitiesTrie?: ArrayTrie<string>;
 
   /**
-   * If `true` then numeric character references must be terminated with a semicolon to be decoded. Otherwise, numeric
-   * character references are recognized even if they are not terminated with a semicolon.
+   * If `true` then [numeric character references](https://www.w3.org/TR/html4/charset.html#h-5.3.1) must be terminated
+   * with a semicolon to be decoded. Otherwise, numeric character references are recognized even if they aren't
+   * terminated with a semicolon.
    *
    * @default false
    */
