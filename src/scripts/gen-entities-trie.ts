@@ -26,6 +26,8 @@ fs.writeFileSync(path.join(dir, 'xml-data.ts'), compileDataModule(arrayTrieEncod
 
 function compileDataModule(arrayTrie: ArrayTrie<string>): string {
   const data = Array.from(arrayTrie.values);
+
   data.unshift(String.fromCharCode(...Array.from(arrayTrie.nodes)));
+
   return 'export default ' + JSON.stringify(data).replace(/\\u00([0-9a-f]{2})/gi, '\\x$1');
 }
