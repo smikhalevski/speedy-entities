@@ -9,13 +9,19 @@ export function escapeXML(input: string): string {
     const startIndex = lastIndex - 1;
     const charCode = input.charCodeAt(startIndex);
 
-    // prettier-ignore
-    const entity =
-      charCode === 34 ? '&quot;' :
-      charCode === 38 ? '&amp;' :
-      charCode === 39 ? '&apos;' :
-      charCode === 60 ? '&lt;' :
-      '&gt;';
+    let entity;
+
+    if (charCode === 34) {
+      entity = '&quot;';
+    } else if (charCode === 38) {
+      entity = '&amp;';
+    } else if (charCode === 39) {
+      entity = '&apos;';
+    } else if (charCode === 60) {
+      entity = '&lt;';
+    } else {
+      entity = '&gt;';
+    }
 
     output += textIndex === startIndex ? entity : input.slice(textIndex, startIndex) + entity;
     textIndex = lastIndex;
