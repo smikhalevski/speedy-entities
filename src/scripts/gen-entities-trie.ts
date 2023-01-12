@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import htmlEntities from './html-entities.json';
 import xmlEntities from './xml-entities.json';
-import { arrayTrieEncode, trieCreate, trieSet } from '@smikhalevski/trie';
+import { ArrayTrie, arrayTrieEncode, trieCreate, trieSet } from '@smikhalevski/trie';
 
 const htmlEntitiesTrie = trieCreate<string>();
 
@@ -20,12 +20,12 @@ const dir = path.resolve(__dirname, '../main/gen');
 
 fs.mkdirSync(dir, { recursive: true });
 
-fs.writeFileSync(
-  path.join(dir, 'htmlEntitiesTrie.ts'),
-  'export default ' + JSON.stringify(arrayTrieEncode(htmlEntitiesTrie))
-);
+fs.writeFileSync(path.join(dir, 'html-data.ts'), compileDataModule(arrayTrieEncode(htmlEntitiesTrie)));
 
-fs.writeFileSync(
-  path.join(dir, 'xmlEntitiesTrie.ts'),
-  'export default ' + JSON.stringify(arrayTrieEncode(xmlEntitiesTrie))
-);
+fs.writeFileSync(path.join(dir, 'xml-data.ts'), compileDataModule(arrayTrieEncode(xmlEntitiesTrie)));
+
+function compileDataModule(arrayTrie: ArrayTrie<string>): string {
+  const data = Array.from(arrayTrie.values);
+  data.unshift(String.fromCharCode(...Array.from(arrayTrie.nodes)));
+  return 'export default ' + JSON.stringify(data).replace(/\\u00([0-9a-f]{2})/gi, '\\x$1');
+}

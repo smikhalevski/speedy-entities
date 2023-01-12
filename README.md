@@ -1,7 +1,7 @@
 # speedy-entities&ensp;🏎💨&ensp;[![build](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml/badge.svg?branch=master&event=push)](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml)
 
 [The fastest](#performance) XML/HTML entity encoder/decoder in
-[23 kB gzipped](https://bundlephobia.com/package/speedy-entities).
+[20 kB gzipped](https://bundlephobia.com/package/speedy-entities).
 
 ```shell
 npm install --save-prod speedy-entities
