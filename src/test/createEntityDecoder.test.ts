@@ -1,24 +1,14 @@
 import { createEntityDecoder } from '../main';
-import { arrayTrieEncode, trieCreate, trieSet } from '@smikhalevski/trie';
 
 describe('createEntityDecoder', () => {
   test('supports named entities', () => {
-    const trie = trieCreate<string>();
+    const decode = createEntityDecoder();
 
-    trieSet(trie, 'foo;', 'okay');
-    trieSet(trie, 'bar;', 'nope');
-    trieSet(trie, 'bar', 'nope');
-
-    const decode = createEntityDecoder({
-      entitiesTrie: arrayTrieEncode(trie),
-    });
-
-    expect(decode('&foo;')).toBe('okay');
-    expect(decode('&foo')).toBe('&foo');
-    expect(decode('&fooZ')).toBe('&fooZ');
-    expect(decode('&bar;')).toBe('nope');
-    expect(decode('&bar')).toBe('nope');
-    expect(decode('&barZ')).toBe('nopeZ');
+    expect(decode('&AMP;')).toBe('&');
+    expect(decode('&AMP')).toBe('&');
+    expect(decode('&AMPZ')).toBe('&Z');
+    expect(decode('&Acy;')).toBe('\u0410');
+    expect(decode('&Acy')).toBe('&Acy');
   });
 
   test('supports numeric references', () => {

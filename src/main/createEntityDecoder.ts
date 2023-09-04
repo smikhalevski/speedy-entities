@@ -1,17 +1,16 @@
-import { ArrayTrie, arrayTrieSearch, ArrayTrieSearchResult } from '@smikhalevski/trie';
+import entitiesTrie from './gen/entities-trie';
 
 const fromCharCode = String.fromCharCode;
-
-const searchResult: ArrayTrieSearchResult<string> = { value: '', lastIndex: 0 };
+const isArray = Array.isArray;
 
 /**
  * The options recognized by {@linkcode createEntityDecoder}.
  */
 export interface EntityDecoderOptions {
-  /**
-   * The trie of [character entity references](https://www.w3.org/TR/html4/charset.html#h-5.3.2).
-   */
-  entitiesTrie?: ArrayTrie<string>;
+  // /**
+  //  * The trie of [character entity references](https://www.w3.org/TR/html4/charset.html#h-5.3.2).
+  //  */
+  // entitiesTrie?: ArrayTrie<string>;
 
   /**
    * If `true` then [numeric character references](https://www.w3.org/TR/html4/charset.html#h-5.3.1) must be terminated
@@ -30,7 +29,51 @@ export interface EntityDecoderOptions {
  * @returns A function that decodes entities in the string.
  */
 export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
-  const { entitiesTrie, numericReferenceSemicolonRequired = false } = options;
+  const { numericReferenceSemicolonRequired = false } = options;
+
+  let lastSearchIndex = -1;
+
+  const searchEntity = (input: string, startIndex: number, inputLength: number): string | null => {
+    let trie: any = entitiesTrie;
+    let i = startIndex;
+    let next, leafCharsLength;
+    let value: string | null = null;
+
+    for (; typeof trie === 'object' && i < inputLength; ++i) {
+      if (!isArray(trie)) {
+        trie = trie[input.charCodeAt(i)];
+        continue;
+      }
+
+      if (typeof (next = trie[1]) === 'object') {
+        lastSearchIndex = i;
+        value = trie[0];
+        trie = next[input.charCodeAt(i)];
+        continue;
+      }
+
+      if (i + (leafCharsLength = next.length) > inputLength) {
+        return value;
+      }
+      for (let j = 0; j < leafCharsLength; ++j) {
+        if (next.charCodeAt(j) !== input.charCodeAt(i + j)) {
+          return value;
+        }
+      }
+      lastSearchIndex = i + leafCharsLength;
+      return trie[0];
+    }
+
+    if (typeof trie === 'string') {
+      lastSearchIndex = i;
+      return trie;
+    }
+    if (isArray(trie) && typeof trie[1] === 'object') {
+      lastSearchIndex = i;
+      return trie[0];
+    }
+    return value;
+  };
 
   return input => {
     let output = '';
@@ -131,9 +174,8 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
         }
       } else if (entitiesTrie !== undefined) {
         // Named character reference
-        if (arrayTrieSearch(entitiesTrie, input, startIndex, inputLength, searchResult) !== null) {
-          entityValue = searchResult.value;
-          endIndex = searchResult.lastIndex;
+        if ((entityValue = searchEntity(input, startIndex, inputLength)) !== null) {
+          endIndex = lastSearchIndex;
         }
       }
 
