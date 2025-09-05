@@ -45,7 +45,7 @@ const entitiesTrie = arrayTrieEncode(trie);
 // Create a decoder
 const decode = createEntityDecoder({
   entitiesTrie,
-  numericReferenceSemicolonRequired: true,
+  isNumericReferenceSemicolonRequired: true,
 });
 
 // Decode entities

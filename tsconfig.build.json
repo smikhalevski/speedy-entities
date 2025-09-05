@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
-  "include": [
-    "./src/main/**/*"
-  ]
+  "compilerOptions": {
+    "allowImportingTsExtensions": false
+  },
+  "include": ["./src/main/**/*"]
 }

@@ -2,25 +2,21 @@
   "name": "speedy-entities",
   "version": "3.0.1",
   "description": "The fastest XML/HTML entities decoder.",
+  "type": "module",
   "main": "./index.js",
-  "module": "./index.mjs",
   "types": "./index.d.ts",
   "exports": {
-    ".": {
-      "types": "./index.d.ts",
-      "import": "./index.mjs",
-      "require": "./index.js"
-    },
+    ".": "./index.js",
     "./package.json": "./package.json"
   },
   "sideEffects": false,
   "scripts": {
-    "build": "npm run gen-entities-trie && tsc --project tsconfig.build.json && rollup --config && cp package.json README.md LICENSE.txt lib/ && cd lib && npm pkg delete scripts devDependencies",
-    "clean": "rimraf gen lib docs coverage",
-    "test": "jest",
+    "build": "tsc --project tsconfig.build.json && cp package.json README.md LICENSE.txt lib/ && cd lib && npm pkg delete scripts devDependencies",
+    "build-entities": "node src/scripts/build-entities.ts",
+    "clean": "rimraf lib docs coverage",
+    "test": "vitest run",
     "perf": "toofast",
-    "docs": "typedoc src/main/index.ts",
-    "gen-entities-trie": "node src/scripts/gen-entity-trie.js"
+    "docs": "typedoc"
   },
   "repository": {
     "type": "git",
@@ -39,22 +35,16 @@
   },
   "homepage": "https://github.com/smikhalevski/speedy-entities#readme",
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^15.2.1",
-    "@smikhalevski/trie": "^2.2.0",
-    "@types/jest": "^29.5.4",
-    "entities": "^4.5.0",
+    "@types/node": "^24.3.1",
+    "entities": "^6.0.1",
     "he": "^1.2.0",
-    "html-entities": "^2.4.0",
-    "jest": "^29.6.4",
-    "prettier": "^3.0.3",
-    "rimraf": "^5.0.1",
-    "rollup": "^3.28.1",
-    "rollup-plugin-dts": "^5.3.1",
-    "toofast": "^2.0.0",
-    "ts-jest": "^29.1.1",
-    "tslib": "^2.6.2",
-    "typedoc": "^0.24.8",
-    "typedoc-custom-css": "github:smikhalevski/typedoc-custom-css#master",
-    "typescript": "^5.1.6"
+    "html-entities": "^2.6.0",
+    "prettier": "^3.6.2",
+    "rimraf": "^6.0.1",
+    "toofast": "^3.0.3",
+    "tslib": "^2.8.1",
+    "typedoc": "^0.28.12",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   }
 }

@@ -1,17 +1,20 @@
-const {
-  decodeHTML: lib_decodeHTML,
-  decodeXML: lib_decodeXML,
-  encodeXML: lib_encodeXML,
-  escapeXML: lib_escapeXML,
-} = require('../../lib');
-const {
-  decodeHTML: entities_decodeHTML,
-  decodeXML: entities_decodeXML,
-  encodeXML: entities_encodeXML,
-  escapeUTF8: entities_escapeUTF8,
-} = require('entities');
-const { decode: htmlEntities_decode, encode: htmlEntities_encode } = require('html-entities');
-const { decode: he_decode, encode: he_encode, escape: he_escape } = require('he');
+import { describe, measure, test } from 'toofast';
+import {
+  decodeHTML as lib_decodeHTML,
+  decodeXML as lib_decodeXML,
+  encodeXML as lib_encodeXML,
+  escapeXML as lib_escapeXML,
+} from '../../lib/index.js';
+import {
+  decodeHTML as entities_decodeHTML,
+  decodeXML as entities_decodeXML,
+  encodeXML as entities_encodeXML,
+  escapeUTF8 as entities_escapeUTF8,
+} from 'entities';
+import { decode as htmlEntities_decode, encode as htmlEntities_encode } from 'html-entities';
+import he from 'he';
+
+const { decode: he_decode, encode: he_encode, escape: he_escape } = he;
 
 const valuesToDecode = [
   '___&uuml;___&#x3f;___',
@@ -39,19 +42,19 @@ const valuesToEncode = [
 describe('decodeHTML', () => {
   for (const value of valuesToDecode) {
     describe(value, () => {
-      test('speedy-entities', measure => {
+      test('speedy-entities', () => {
         measure(() => {
           lib_decodeHTML(value);
         });
       });
 
-      test('entities', measure => {
+      test('entities', () => {
         measure(() => {
           entities_decodeHTML(value);
         });
       });
 
-      test('html-entities', measure => {
+      test('html-entities', () => {
         const options = {
           level: 'html5',
           scope: 'body',
@@ -62,7 +65,7 @@ describe('decodeHTML', () => {
         });
       });
 
-      test('he', measure => {
+      test('he', () => {
         measure(() => {
           he_decode(value);
         });
@@ -74,19 +77,19 @@ describe('decodeHTML', () => {
 describe('decodeXML', () => {
   for (const value of valuesToDecode) {
     describe(value, () => {
-      test('speedy-entities', measure => {
+      test('speedy-entities', () => {
         measure(() => {
           lib_decodeXML(value);
         });
       });
 
-      test('entities', measure => {
+      test('entities', () => {
         measure(() => {
           entities_decodeXML(value);
         });
       });
 
-      test('html-entities', measure => {
+      test('html-entities', () => {
         const options = {
           level: 'xml',
           strict: true,
@@ -97,7 +100,7 @@ describe('decodeXML', () => {
         });
       });
 
-      test('he', measure => {
+      test('he', () => {
         measure(() => {
           he_decode(value);
         });
@@ -109,19 +112,19 @@ describe('decodeXML', () => {
 describe('encodeXML', () => {
   for (const value of valuesToEncode) {
     describe(value, () => {
-      test('speedy-entities', measure => {
+      test('speedy-entities', () => {
         measure(() => {
           lib_encodeXML(value);
         });
       });
 
-      test('entities', measure => {
+      test('entities', () => {
         measure(() => {
           entities_encodeXML(value);
         });
       });
 
-      test('html-entities', measure => {
+      test('html-entities', () => {
         const options = {
           level: 'xml',
           mode: 'nonAscii',
@@ -132,7 +135,7 @@ describe('encodeXML', () => {
         });
       });
 
-      test('he', measure => {
+      test('he', () => {
         measure(() => {
           he_encode(value);
         });
@@ -144,19 +147,19 @@ describe('encodeXML', () => {
 describe('escapeXML', () => {
   for (const value of valuesToEncode) {
     describe(value, () => {
-      test('speedy-entities', measure => {
+      test('speedy-entities', () => {
         measure(() => {
           lib_escapeXML(value);
         });
       });
 
-      test('entities', measure => {
+      test('entities', () => {
         measure(() => {
           entities_escapeUTF8(value);
         });
       });
 
-      test('html-entities', measure => {
+      test('html-entities', () => {
         const options = {
           level: 'xml',
           mode: 'specialChars',
@@ -167,7 +170,7 @@ describe('escapeXML', () => {
         });
       });
 
-      test('he', measure => {
+      test('he', () => {
         measure(() => {
           he_escape(value);
         });
