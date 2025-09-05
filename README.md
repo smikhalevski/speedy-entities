@@ -1,7 +1,7 @@
-# speedy-entities&ensp;🏎💨&ensp;[![build](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml/badge.svg?branch=master&event=push)](https://github.com/smikhalevski/speedy-entities/actions/workflows/master.yml)
+# speedy-entities 🏎💨
 
 [The fastest](#performance) XML/HTML entity encoder/decoder in
-[20 kB gzipped](https://bundlephobia.com/package/speedy-entities).
+[13 kB gzipped](https://bundlephobia.com/package/speedy-entities).
 
 ```shell
 npm install --save-prod speedy-entities
@@ -26,25 +26,17 @@ decodeHTML('&NotNestedGreaterGreater;&CounterClockwiseContourIntegral;');
 
 ## Custom decoder
 
-You can create a decoder that decodes custom named entities:
+You can create a decoder that decodes your custom character entity references:
 
 ```ts
-import { arrayTrieEncode, trieCreate, trieSet } from '@smikhalevski/trie';
 import { createEntityDecoder } from 'speedy-entities';
-
-// Create a trie that would hold entities
-const trie = trieCreate<string>();
-
-// Register named entities
-trieSet('foo;', 'okay');
-trieSet('qux;', 'yeah');
-
-// Encode a trie
-const entitiesTrie = arrayTrieEncode(trie);
 
 // Create a decoder
 const decode = createEntityDecoder({
-  entitiesTrie,
+  entities: {
+    '&foo;': 'okay',
+    '&qux;': 'yeah',
+  },
   isNumericReferenceSemicolonRequired: true,
 });
 
@@ -78,14 +70,21 @@ escapeXML('&😘❤️');
 
 # Performance
 
-Clone this repo and use `npm ci && npm run perf` to run the performance testsuite.
+Results are in millions of operations per second (MHz). The higher number is better.
 
-Results are in millions of operations per second. The higher number is better.
+|                           Library | Decode HTML | Decode XML | Encode XML | Escape XML |
+| --------------------------------: | ----------: | ---------: | ---------: | ---------: |
+| **speedy-entities**&#x200B;@3.1.0 |     **4.9** |    **5.2** |    **5.3** |    **7.2** |
+|        **entities**&#x200B;@6.0.1 |         3.4 |        3.6 |        4.5 |        6.1 |
+|   **html-entities**&#x200B;@2.6.0 |         2.2 |        2.3 |        3.3 |        5.1 |
+|              **he**&#x200B;@1.2.0 |         1.9 |        1.8 |        2.2 |        5.2 |
 
-### Decode
+Tests were conducted using [TooFast](https://github.com/smikhalevski/toofast#readme) on Apple M1 with Node.js v23.11.1.
 
-![Decode HTML performance chart](./images/perf-decode-html.svg)
+To reproduce [the performance test suite](./src/test/perf/overall.perf.js) results, clone this repo and run:
 
-### Encode
-
-![Encode XML performance chart](./images/perf-encode-xml.svg)
+```shell
+npm ci
+npm run build
+npm run perf
+```

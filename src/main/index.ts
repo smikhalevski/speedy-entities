@@ -1,5 +1,5 @@
-export * from './createEntityDecoder.js';
-export * from './decodeHTML.js';
-export * from './decodeXML.js';
-export * from './encodeXML.js';
-export * from './escapeXML.js';
+export { createEntityDecoder, type EntityDecoderOptions } from './createEntityDecoder.js';
+export { decodeHTML } from './decodeHTML.js';
+export { decodeXML } from './decodeXML.js';
+export { encodeXML } from './encodeXML.js';
+export { escapeXML } from './escapeXML.js';

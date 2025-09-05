@@ -1,12 +1,20 @@
-const fromCharCode = String.fromCharCode;
-
 /**
  * The options recognized by {@linkcode createEntityDecoder}.
  */
 export interface EntityDecoderOptions {
-  entities?: Map<number, string>;
-
-  maximumNamedReferenceLength?: number;
+  /**
+   * Mapping from an [character entity reference](https://www.w3.org/TR/html4/charset.html#h-5.3.2) to its decoded value.
+   * Entity references should contain only [a-zA-Z] and may optionally start with an ampersand "&" and end with
+   * a semicolon ";".
+   *
+   * ```json
+   * {
+   *   "&Delta;": "\u0394",
+   *   "LongRightArrow;": "\u27F6"
+   * }
+   * ```
+   */
+  entities?: Record<string, string>;
 
   /**
    * If `true` then [numeric character references](https://www.w3.org/TR/html4/charset.html#h-5.3.1) must be terminated
@@ -25,7 +33,24 @@ export interface EntityDecoderOptions {
  * @returns A function that decodes entities in the string.
  */
 export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
-  const { entities, maximumNamedReferenceLength = 32, isNumericReferenceSemicolonRequired = false } = options;
+  const { entities, isNumericReferenceSemicolonRequired = false } = options;
+  const fromCharCode = String.fromCharCode;
+
+  let entityDereferenceMap: Map<number, string> | undefined;
+  let maximumEntityReferenceLength = 32;
+
+  if (entities !== undefined) {
+    entityDereferenceMap = new Map();
+
+    for (const entity in entities) {
+      const hashCode = getEntityReferenceHashCode(entity);
+
+      if (hashCode !== 0) {
+        maximumEntityReferenceLength = Math.max(maximumEntityReferenceLength, entity.length);
+        entityDereferenceMap.set(hashCode, entities[entity]);
+      }
+    }
+  }
 
   return input => {
     let output = '';
@@ -124,30 +149,27 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
             ++endIndex;
           }
         }
-      } else if (entities !== undefined) {
-        // Named character reference
+      } else if (entityDereferenceMap !== undefined) {
+        // Character entity reference
 
-        for (let index = startIndex, hashCode = 0, nextValue; index < inputLength; ++index) {
-          charCode = input.charCodeAt(index);
+        let index = startIndex;
+        let hashCode = 0;
+        let referencedValue;
 
-          if (
-            charCode !== /* ; */ 59 &&
-            (charCode < /* a */ 97 || charCode > /* z */ 122) &&
-            (charCode < /* A */ 65 || charCode > /* Z */ 90)
-          ) {
-            break;
-          }
-
+        while (
+          charCode !== /* ; */ 59 &&
+          index < inputLength &&
+          index - startIndex < maximumEntityReferenceLength &&
+          ((charCode = input.charCodeAt(index) | 0), isEntityReferenceChar(charCode))
+        ) {
+          ++index;
           hashCode = (hashCode << 5) - hashCode + charCode;
-          nextValue = entities.get(hashCode >>> 0);
 
-          if (nextValue !== undefined) {
-            value = nextValue;
-            endIndex = index + 1;
-          }
+          referencedValue = entityDereferenceMap.get(hashCode);
 
-          if (charCode === /* ; */ 59 || index - startIndex >= maximumNamedReferenceLength) {
-            break;
+          if (referencedValue !== undefined) {
+            value = referencedValue;
+            endIndex = index;
           }
         }
       }
@@ -195,3 +217,30 @@ const entityOverrides: { [codePoint: number]: string } = {
   158: '\u017E',
   159: '\u0178',
 };
+
+function getEntityReferenceHashCode(entity: string): number {
+  if (entity.length === 0) {
+    return 0;
+  }
+
+  let hashCode = 0;
+
+  for (let index = entity.charCodeAt(0) === /* & */ 38 ? 1 : 0; index < entity.length; ++index) {
+    const charCode = entity.charCodeAt(index);
+
+    if (!isEntityReferenceChar(charCode)) {
+      return 0;
+    }
+    hashCode = (hashCode << 5) - hashCode + entity.charCodeAt(index);
+  }
+
+  return hashCode;
+}
+
+function isEntityReferenceChar(charCode: number): boolean {
+  return (
+    (charCode >= /* a */ 97 && charCode <= /* z */ 122) ||
+    (charCode >= /* A */ 65 && charCode <= /* Z */ 90) ||
+    charCode === /* ; */ 59
+  );
+}

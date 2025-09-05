@@ -1,20 +1,8 @@
 import { describe, measure, test } from 'toofast';
-import {
-  decodeHTML as lib_decodeHTML,
-  decodeXML as lib_decodeXML,
-  encodeXML as lib_encodeXML,
-  escapeXML as lib_escapeXML,
-} from '../../lib/index.js';
-import {
-  decodeHTML as entities_decodeHTML,
-  decodeXML as entities_decodeXML,
-  encodeXML as entities_encodeXML,
-  escapeUTF8 as entities_escapeUTF8,
-} from 'entities';
-import { decode as htmlEntities_decode, encode as htmlEntities_encode } from 'html-entities';
+import * as lib from '../../lib/index.js';
+import * as entities from 'entities';
+import * as htmlEntities from 'html-entities';
 import he from 'he';
-
-const { decode: he_decode, encode: he_encode, escape: he_escape } = he;
 
 const valuesToDecode = [
   '___&uuml;___&#x3f;___',
@@ -39,18 +27,61 @@ const valuesToEncode = [
   '😘🔥', // surrogate pairs
 ];
 
+const isAverageMeasure = true;
+
 describe('decodeHTML', () => {
+  if (isAverageMeasure) {
+    test('speedy-entities', () => {
+      for (const value of valuesToDecode) {
+        measure(() => {
+          lib.decodeHTML(value);
+        });
+      }
+    });
+
+    test('entities', () => {
+      for (const value of valuesToDecode) {
+        measure(() => {
+          entities.decodeHTML(value);
+        });
+      }
+    });
+
+    test('html-entities', () => {
+      const options = {
+        level: 'html5',
+        scope: 'body',
+      };
+
+      for (const value of valuesToDecode) {
+        measure(() => {
+          htmlEntities.decode(value, options);
+        });
+      }
+    });
+
+    test('he', () => {
+      for (const value of valuesToDecode) {
+        measure(() => {
+          he.decode(value);
+        });
+      }
+    });
+
+    return;
+  }
+
   for (const value of valuesToDecode) {
     describe(value, () => {
       test('speedy-entities', () => {
         measure(() => {
-          lib_decodeHTML(value);
+          lib.decodeHTML(value);
         });
       });
 
       test('entities', () => {
         measure(() => {
-          entities_decodeHTML(value);
+          entities.decodeHTML(value);
         });
       });
 
@@ -61,13 +92,13 @@ describe('decodeHTML', () => {
         };
 
         measure(() => {
-          htmlEntities_decode(value, options);
+          htmlEntities.decode(value, options);
         });
       });
 
       test('he', () => {
         measure(() => {
-          he_decode(value);
+          he.decode(value);
         });
       });
     });
@@ -75,17 +106,58 @@ describe('decodeHTML', () => {
 });
 
 describe('decodeXML', () => {
+  if (isAverageMeasure) {
+    test('speedy-entities', () => {
+      for (const value of valuesToDecode) {
+        measure(() => {
+          lib.decodeXML(value);
+        });
+      }
+    });
+
+    test('entities', () => {
+      for (const value of valuesToDecode) {
+        measure(() => {
+          entities.decodeXML(value);
+        });
+      }
+    });
+
+    test('html-entities', () => {
+      const options = {
+        level: 'xml',
+        strict: true,
+      };
+
+      for (const value of valuesToDecode) {
+        measure(() => {
+          htmlEntities.decode(value, options);
+        });
+      }
+    });
+
+    test('he', () => {
+      for (const value of valuesToDecode) {
+        measure(() => {
+          he.decode(value);
+        });
+      }
+    });
+
+    return;
+  }
+
   for (const value of valuesToDecode) {
     describe(value, () => {
       test('speedy-entities', () => {
         measure(() => {
-          lib_decodeXML(value);
+          lib.decodeXML(value);
         });
       });
 
       test('entities', () => {
         measure(() => {
-          entities_decodeXML(value);
+          entities.decodeXML(value);
         });
       });
 
@@ -96,13 +168,13 @@ describe('decodeXML', () => {
         };
 
         measure(() => {
-          htmlEntities_decode(value, options);
+          htmlEntities.decode(value, options);
         });
       });
 
       test('he', () => {
         measure(() => {
-          he_decode(value);
+          he.decode(value);
         });
       });
     });
@@ -110,17 +182,58 @@ describe('decodeXML', () => {
 });
 
 describe('encodeXML', () => {
+  if (isAverageMeasure) {
+    test('speedy-entities', () => {
+      for (const value of valuesToEncode) {
+        measure(() => {
+          lib.encodeXML(value);
+        });
+      }
+    });
+
+    test('entities', () => {
+      for (const value of valuesToEncode) {
+        measure(() => {
+          entities.encodeXML(value);
+        });
+      }
+    });
+
+    test('html-entities', () => {
+      const options = {
+        level: 'xml',
+        mode: 'nonAscii',
+      };
+
+      for (const value of valuesToEncode) {
+        measure(() => {
+          htmlEntities.encode(value, options);
+        });
+      }
+    });
+
+    test('he', () => {
+      for (const value of valuesToEncode) {
+        measure(() => {
+          he.encode(value);
+        });
+      }
+    });
+
+    return;
+  }
+
   for (const value of valuesToEncode) {
     describe(value, () => {
       test('speedy-entities', () => {
         measure(() => {
-          lib_encodeXML(value);
+          lib.encodeXML(value);
         });
       });
 
       test('entities', () => {
         measure(() => {
-          entities_encodeXML(value);
+          entities.encodeXML(value);
         });
       });
 
@@ -131,13 +244,13 @@ describe('encodeXML', () => {
         };
 
         measure(() => {
-          htmlEntities_encode(value, options);
+          htmlEntities.encode(value, options);
         });
       });
 
       test('he', () => {
         measure(() => {
-          he_encode(value);
+          he.encode(value);
         });
       });
     });
@@ -145,17 +258,58 @@ describe('encodeXML', () => {
 });
 
 describe('escapeXML', () => {
+  if (isAverageMeasure) {
+    test('speedy-entities', () => {
+      for (const value of valuesToEncode) {
+        measure(() => {
+          lib.escapeXML(value);
+        });
+      }
+    });
+
+    test('entities', () => {
+      for (const value of valuesToEncode) {
+        measure(() => {
+          entities.escapeUTF8(value);
+        });
+      }
+    });
+
+    test('html-entities', () => {
+      const options = {
+        level: 'xml',
+        mode: 'specialChars',
+      };
+
+      for (const value of valuesToEncode) {
+        measure(() => {
+          htmlEntities.encode(value, options);
+        });
+      }
+    });
+
+    test('he', () => {
+      for (const value of valuesToEncode) {
+        measure(() => {
+          he.escape(value);
+        });
+      }
+    });
+
+    return;
+  }
+
   for (const value of valuesToEncode) {
     describe(value, () => {
       test('speedy-entities', () => {
         measure(() => {
-          lib_escapeXML(value);
+          lib.escapeXML(value);
         });
       });
 
       test('entities', () => {
         measure(() => {
-          entities_escapeUTF8(value);
+          entities.escapeUTF8(value);
         });
       });
 
@@ -166,13 +320,13 @@ describe('escapeXML', () => {
         };
 
         measure(() => {
-          htmlEntities_encode(value, options);
+          htmlEntities.encode(value, options);
         });
       });
 
       test('he', () => {
         measure(() => {
-          he_escape(value);
+          he.escape(value);
         });
       });
     });

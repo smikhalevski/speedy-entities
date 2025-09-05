@@ -1,10 +1,9 @@
 import { expect, test } from 'vitest';
 import { createEntityDecoder } from '../main/createEntityDecoder.js';
-import { createEntityMap } from '../main/utils.js';
-import htmlEntities from '../main/gen/html-entities.js';
+import htmlEntities from '../main/html-entities.js';
 
 test('supports named entities', () => {
-  const decode = createEntityDecoder({ entities: createEntityMap(htmlEntities) });
+  const decode = createEntityDecoder({ entities: htmlEntities });
 
   expect(decode('&AMP;')).toBe('&');
   expect(decode('&AMP')).toBe('&');

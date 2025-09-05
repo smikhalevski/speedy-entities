@@ -7,11 +7,13 @@
   "types": "./index.d.ts",
   "exports": {
     ".": "./index.js",
+    "./html-entities": "./html-entities.js",
+    "./xml-entities": "./xml-entities.js",
     "./package.json": "./package.json"
   },
   "sideEffects": false,
   "scripts": {
-    "build": "node src/scripts/build-entities.ts && tsc --project tsconfig.build.json && cp package.json README.md LICENSE.txt lib/ && cd lib && npm pkg delete scripts devDependencies",
+    "build": "tsc --project tsconfig.build.json && cp package.json README.md LICENSE.txt lib/ && cd lib && npm pkg delete scripts devDependencies",
     "clean": "rimraf lib docs coverage",
     "test": "vitest run",
     "perf": "toofast",
