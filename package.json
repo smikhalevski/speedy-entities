@@ -11,8 +11,7 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "tsc --project tsconfig.build.json && cp package.json README.md LICENSE.txt lib/ && cd lib && npm pkg delete scripts devDependencies",
-    "build-entities": "node src/scripts/build-entities.ts",
+    "build": "node src/scripts/build-entities.ts && tsc --project tsconfig.build.json && cp package.json README.md LICENSE.txt lib/ && cd lib && npm pkg delete scripts devDependencies",
     "clean": "rimraf lib docs coverage",
     "test": "vitest run",
     "perf": "toofast",
