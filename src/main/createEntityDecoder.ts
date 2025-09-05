@@ -1,17 +1,12 @@
-import { ArrayTrie, arrayTrieSearch, ArrayTrieSearchResult } from '@smikhalevski/trie';
-
 const fromCharCode = String.fromCharCode;
-
-const searchResult: ArrayTrieSearchResult<string> = { value: '', lastIndex: 0 };
 
 /**
  * The options recognized by {@linkcode createEntityDecoder}.
  */
 export interface EntityDecoderOptions {
-  /**
-   * The trie of [character entity references](https://www.w3.org/TR/html4/charset.html#h-5.3.2).
-   */
-  entitiesTrie?: ArrayTrie<string>;
+  entities?: Map<number, string>;
+
+  maximumNamedReferenceLength?: number;
 
   /**
    * If `true` then [numeric character references](https://www.w3.org/TR/html4/charset.html#h-5.3.1) must be terminated
@@ -20,7 +15,7 @@ export interface EntityDecoderOptions {
    *
    * @default false
    */
-  numericReferenceSemicolonRequired?: boolean;
+  isNumericReferenceSemicolonRequired?: boolean;
 }
 
 /**
@@ -30,7 +25,7 @@ export interface EntityDecoderOptions {
  * @returns A function that decodes entities in the string.
  */
 export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
-  const { entitiesTrie, numericReferenceSemicolonRequired = false } = options;
+  const { entities, maximumNamedReferenceLength = 32, isNumericReferenceSemicolonRequired = false } = options;
 
   return input => {
     let output = '';
@@ -48,16 +43,16 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
       charIndex = startIndex++;
 
-      let entityValue: string | null = null;
+      let value: string | undefined;
       let endIndex = startIndex;
+      let charCode = 0;
 
-      if (startIndex < inputLength - 2 && input.charCodeAt(startIndex) === 35 /* # */) {
+      if (startIndex < inputLength - 2 && input.charCodeAt(startIndex) === /* # */ 35) {
         // Numeric character reference
 
-        let charCode = 0;
         let codePoint = 0;
 
-        if ((input.charCodeAt(++startIndex) | 32) === 120 /* x */) {
+        if ((input.charCodeAt(++startIndex) | 32) === /* x */ 120) {
           endIndex = ++startIndex;
 
           // parseInt of a hexadecimal number
@@ -66,8 +61,8 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
             charCode = input.charCodeAt(endIndex) | 32;
 
             if (
-              (charCode >= 48 /* 0 */ && charCode <= 57) /* 9 */ ||
-              (charCode >= 97 /* a */ && charCode <= 102) /* f */
+              (charCode >= /* 0 */ 48 && charCode <= /* 9 */ 57) ||
+              (charCode >= /* a */ 97 && charCode <= /* f */ 102)
             ) {
               // Convert "0" → 0 and "f" → 15
               codePoint = codePoint * 16 + charCode - (charCode & 112) + (charCode >> 6) * 9;
@@ -81,9 +76,9 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
           // parseInt of a decimal number
           while (endIndex - startIndex < 6 && endIndex < inputLength) {
-            charCode = input.charCodeAt(endIndex);
+            charCode = input.charCodeAt(endIndex) | 32;
 
-            if (charCode >= 48 /* 0 */ && charCode <= 57 /* 9 */) {
+            if (charCode >= /* 0 */ 48 && charCode <= /* 9 */ 57) {
               codePoint = codePoint * 10 + charCode - (charCode & 112);
               ++endIndex;
             } else {
@@ -95,15 +90,15 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
         if (endIndex !== startIndex) {
           // At least one digit must present
 
-          const terminated = endIndex < inputLength && input.charCodeAt(endIndex) === 59; /* ; */
+          const isTerminated = endIndex < inputLength && input.charCodeAt(endIndex) === /* ; */ 59;
 
-          if (terminated || !numericReferenceSemicolonRequired) {
+          if (isTerminated || !isNumericReferenceSemicolonRequired) {
             // Convert a code point to a string
             // https://github.com/mathiasbynens/he/blob/master/src/he.js#L106-L134
 
             if (codePoint === 0 || (codePoint >= 0xd800 && codePoint <= 0xdfff) || codePoint > 0x10ffff) {
               // Null char code, or character reference is outside the permissible Unicode range
-              entityValue = '\uFFFD';
+              value = '\uFFFD';
             } else if (
               codePoint >= 128 &&
               codePoint <= 195 &&
@@ -114,32 +109,52 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
               codePoint !== 157
             ) {
               // Overridden char code
-              entityValue = entityOverrides[codePoint];
+              value = entityOverrides[codePoint];
             } else if (codePoint > 0xffff) {
               // Surrogate pair
               codePoint -= 0x10000;
-              entityValue = fromCharCode(((codePoint >>> 10) & 0x3ff) | 0xd800, 0xdc00 | (codePoint & 0x3ff));
+              value = fromCharCode(((codePoint >>> 10) & 0x3ff) | 0xd800, 0xdc00 | (codePoint & 0x3ff));
             } else {
               // Char code
-              entityValue = fromCharCode(codePoint);
+              value = fromCharCode(codePoint);
             }
           }
 
-          if (terminated) {
+          if (isTerminated) {
             ++endIndex;
           }
         }
-      } else if (entitiesTrie !== undefined) {
+      } else if (entities !== undefined) {
         // Named character reference
-        if (arrayTrieSearch(entitiesTrie, input, startIndex, inputLength, searchResult) !== null) {
-          entityValue = searchResult.value;
-          endIndex = searchResult.lastIndex;
+
+        for (let index = startIndex, hashCode = 0, nextValue; index < inputLength; ++index) {
+          charCode = input.charCodeAt(index);
+
+          if (
+            charCode !== /* ; */ 59 &&
+            (charCode < /* a */ 97 || charCode > /* z */ 122) &&
+            (charCode < /* A */ 65 || charCode > /* Z */ 90)
+          ) {
+            break;
+          }
+
+          hashCode = (hashCode << 5) - hashCode + charCode;
+          nextValue = entities.get(hashCode >>> 0);
+
+          if (nextValue !== undefined) {
+            value = nextValue;
+            endIndex = index + 1;
+          }
+
+          if (charCode === /* ; */ 59 || index - startIndex >= maximumNamedReferenceLength) {
+            break;
+          }
         }
       }
 
       // Concat decoded entity and preceding substring
-      if (entityValue !== null) {
-        output += textIndex === charIndex ? entityValue : input.slice(textIndex, charIndex) + entityValue;
+      if (value !== undefined) {
+        output += textIndex === charIndex ? value : input.slice(textIndex, charIndex) + value;
         textIndex = endIndex;
       }
 

@@ -1,11 +1,12 @@
-import { createEntityDecoder } from './createEntityDecoder';
-import { unpackData } from './unpackData';
-import xmlData from './gen/xml-data';
+import { createEntityDecoder } from './createEntityDecoder.js';
+import { createEntityMap } from './utils.js';
+import xmlEntities from './gen/xml-entities.js';
 
 /**
  * Decodes XML entities and numeric character references in the input.
  */
 export const decodeXML = createEntityDecoder({
-  entitiesTrie: unpackData(xmlData),
-  numericReferenceSemicolonRequired: true,
+  entities: createEntityMap(xmlEntities),
+  maximumNamedReferenceLength: 5,
+  isNumericReferenceSemicolonRequired: true,
 });

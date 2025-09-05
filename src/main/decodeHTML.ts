@@ -1,11 +1,12 @@
-import { createEntityDecoder } from './createEntityDecoder';
-import { unpackData } from './unpackData';
-import htmlData from './gen/html-data';
+import { createEntityDecoder } from './createEntityDecoder.js';
+import { createEntityMap } from './utils.js';
+import htmlEntities from './gen/html-entities.js';
 
 /**
  * Decodes all known HTML entities and numeric character references in the input.
  */
 export const decodeHTML = createEntityDecoder({
-  entitiesTrie: unpackData(htmlData),
-  numericReferenceSemicolonRequired: false,
+  entities: createEntityMap(htmlEntities),
+  maximumNamedReferenceLength: 32,
+  isNumericReferenceSemicolonRequired: false,
 });
