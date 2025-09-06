@@ -72,12 +72,12 @@ escapeXML('&😘❤️');
 
 Results are in millions of operations per second (MHz). The higher number is better.
 
-|                           Library | Decode HTML | Decode XML | Encode XML | Escape XML |
-| --------------------------------: | ----------: | ---------: | ---------: | ---------: |
-| **speedy-entities**&#x200B;@3.1.0 |     **4.9** |    **5.2** |    **5.3** |    **7.2** |
-|        **entities**&#x200B;@6.0.1 |         3.4 |        3.6 |        4.5 |        6.1 |
-|   **html-entities**&#x200B;@2.6.0 |         2.2 |        2.3 |        3.3 |        5.1 |
-|              **he**&#x200B;@1.2.0 |         1.9 |        1.8 |        2.2 |        5.2 |
+|                                                                 Library |                                                      Library Size | Decode HTML | Decode XML | Encode XML | Escape XML |
+| ----------------------------------------------------------------------: | ----------------------------------------------------------------: | ----------: | ---------: | ---------: | ---------: |
+|                                           speedy-&#xFEFF;entities@3.1.0 | [13.3 kB](https://bundlephobia.com/package/speedy-entities@3.1.0) |     **4.9** |    **5.2** |    **5.3** |    **7.2** |
+|                      [entities](https://github.com/fb55/entities)@6.0.1 |        [26.6 kB](https://bundlephobia.com/package/entities@6.0.1) |         3.4 |        3.6 |        4.5 |        6.1 |
+| [html-&#xFEFF;entities](https://github.com/mdevils/html-entities)@2.6.0 |   [13.2 kB](https://bundlephobia.com/package/html-entities@2.6.0) |         2.2 |        2.3 |        3.3 |        5.1 |
+|                         [he](https://github.com/mathiasbynens/he)@1.2.0 |              [29.6 kB](https://bundlephobia.com/package/he@1.2.0) |         1.9 |        1.8 |        2.2 |        5.2 |
 
 Tests were conducted using [TooFast](https://github.com/smikhalevski/toofast#readme) on Apple M1 with Node.js v23.11.1.
 
