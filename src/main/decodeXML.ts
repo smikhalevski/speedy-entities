@@ -7,4 +7,5 @@ import xmlEntities from './xml-entities.js';
 export const decodeXML = createEntityDecoder({
   entities: xmlEntities,
   isNumericReferenceSemicolonRequired: true,
+  areC1ControlsRemapped: false,
 });

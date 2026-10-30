@@ -4,8 +4,8 @@
 export interface EntityDecoderOptions {
   /**
    * Mapping from an [character entity reference](https://www.w3.org/TR/html4/charset.html#h-5.3.2) to its decoded value.
-   * Entity references should contain only [a-zA-Z] and may optionally start with an ampersand "&" and end with
-   * a semicolon ";".
+   * Entity references should contain only [a-zA-Z0-9] and may optionally start with an ampersand "&" and end with
+   * a semicolon ";". An error is thrown if an entity reference is invalid.
    *
    * ```json
    * {
@@ -24,6 +24,15 @@ export interface EntityDecoderOptions {
    * @default false
    */
   isNumericReferenceSemicolonRequired?: boolean;
+
+  /**
+   * If `true` then numeric character references to C1 control characters (U+0080 to U+009F) are decoded as
+   * Windows-1252 characters, [as HTML does](https://html.spec.whatwg.org/multipage/parsing.html#numeric-character-reference-end-state).
+   * For example, "&#128;" is decoded as "\u20AC" instead of "\u0080". XML doesn't do this.
+   *
+   * @default true
+   */
+  areC1ControlsRemapped?: boolean;
 }
 
 /**
@@ -33,22 +42,23 @@ export interface EntityDecoderOptions {
  * @returns A function that decodes entities in the string.
  */
 export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
-  const { entities, isNumericReferenceSemicolonRequired = false } = options;
-  const fromCharCode = String.fromCharCode;
+  const { entities, isNumericReferenceSemicolonRequired = false, areC1ControlsRemapped = true } = options;
 
-  let entityDereferenceMap: Map<number, string> | undefined;
-  let maximumEntityReferenceLength = 32;
+  const entityDereferenceMap = new Map<number, string>();
+
+  let maximumEntityReferenceLength = 0;
 
   if (entities !== undefined) {
-    entityDereferenceMap = new Map();
-
     for (const entity in entities) {
-      const hashCode = getEntityReferenceHashCode(entity);
-
-      if (hashCode !== 0) {
-        maximumEntityReferenceLength = Math.max(maximumEntityReferenceLength, entity.length);
-        entityDereferenceMap.set(hashCode, entities[entity]);
+      if (!isEntityReference(entity)) {
+        throw new Error('Invalid entity reference: ' + entity);
       }
+
+      // Skip the leading ampersand
+      const startIndex = entity.charCodeAt(0) === /* & */ 38 ? 1 : 0;
+
+      maximumEntityReferenceLength = Math.max(maximumEntityReferenceLength, entity.length - startIndex);
+      entityDereferenceMap.set(getHashCode(entity, startIndex, entity.length), entities[entity]);
     }
   }
 
@@ -70,45 +80,45 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
       let value: string | undefined;
       let endIndex = startIndex;
-      let charCode = 0;
 
-      if (startIndex < inputLength - 2 && input.charCodeAt(startIndex) === /* # */ 35) {
+      if (startIndex < inputLength - 1 && input.charCodeAt(startIndex) === /* # */ 35) {
         // Numeric character reference
 
+        // All digits are consumed, out-of-range code points (Infinity included) are replaced with U+FFFD below
         let codePoint = 0;
 
         if ((input.charCodeAt(++startIndex) | 32) === /* x */ 120) {
           endIndex = ++startIndex;
 
           // parseInt of a hexadecimal number
-          while (endIndex - startIndex < 6 && endIndex < inputLength) {
-            // Convert alpha to lower case
-            charCode = input.charCodeAt(endIndex) | 32;
+          while (endIndex < inputLength) {
+            const charCode = input.charCodeAt(endIndex);
 
-            if (
-              (charCode >= /* 0 */ 48 && charCode <= /* 9 */ 57) ||
-              (charCode >= /* a */ 97 && charCode <= /* f */ 102)
-            ) {
-              // Convert "0" → 0 and "f" → 15
-              codePoint = codePoint * 16 + charCode - (charCode & 112) + (charCode >> 6) * 9;
-              ++endIndex;
+            // Convert alpha to lower case
+            const lowerCharCode = charCode | 32;
+
+            if (charCode >= /* 0 */ 48 && charCode <= /* 9 */ 57) {
+              codePoint = codePoint * 16 + charCode - 48;
+            } else if (lowerCharCode >= /* a */ 97 && lowerCharCode <= /* f */ 102) {
+              codePoint = codePoint * 16 + lowerCharCode - 87;
             } else {
               break;
             }
+            ++endIndex;
           }
         } else {
           endIndex = startIndex;
 
           // parseInt of a decimal number
-          while (endIndex - startIndex < 6 && endIndex < inputLength) {
-            charCode = input.charCodeAt(endIndex) | 32;
+          while (endIndex < inputLength) {
+            const charCode = input.charCodeAt(endIndex);
 
             if (charCode >= /* 0 */ 48 && charCode <= /* 9 */ 57) {
-              codePoint = codePoint * 10 + charCode - (charCode & 112);
-              ++endIndex;
+              codePoint = codePoint * 10 + charCode - 48;
             } else {
               break;
             }
+            ++endIndex;
           }
         }
 
@@ -124,24 +134,11 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
             if (codePoint === 0 || (codePoint >= 0xd800 && codePoint <= 0xdfff) || codePoint > 0x10ffff) {
               // Null char code, or character reference is outside the permissible Unicode range
               value = '\uFFFD';
-            } else if (
-              codePoint >= 128 &&
-              codePoint <= 195 &&
-              codePoint !== 129 &&
-              codePoint !== 141 &&
-              codePoint !== 143 &&
-              codePoint !== 144 &&
-              codePoint !== 157
-            ) {
-              // Overridden char code
-              value = entityOverrides[codePoint];
-            } else if (codePoint > 0xffff) {
-              // Surrogate pair
-              codePoint -= 0x10000;
-              value = fromCharCode(((codePoint >>> 10) & 0x3ff) | 0xd800, 0xdc00 | (codePoint & 0x3ff));
+            } else if (areC1ControlsRemapped && codePoint >= 0x80 && codePoint <= 0x9f) {
+              // Some C1 controls don't have a Windows-1252 counterpart and are preserved
+              value = c1ControlMap.get(codePoint) ?? String.fromCharCode(codePoint);
             } else {
-              // Char code
-              value = fromCharCode(codePoint);
+              value = String.fromCodePoint(codePoint);
             }
           }
 
@@ -149,27 +146,35 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
             ++endIndex;
           }
         }
-      } else if (entityDereferenceMap !== undefined) {
+      } else {
         // Character entity reference
 
         let index = startIndex;
-        let hashCode = 0;
-        let referencedValue;
+        let hash1 = HASH1_SEED;
+        let hash2 = HASH2_SEED;
 
-        while (
-          charCode !== /* ; */ 59 &&
-          index < inputLength &&
-          index - startIndex < maximumEntityReferenceLength &&
-          ((charCode = input.charCodeAt(index) | 0), isEntityReferenceChar(charCode))
-        ) {
+        while (index < inputLength && index - startIndex < maximumEntityReferenceLength) {
+          const charCode = input.charCodeAt(index);
+
+          if (charCode !== /* ; */ 59 && !isEntityNameChar(charCode)) {
+            break;
+          }
+
           ++index;
-          hashCode = (hashCode << 5) - hashCode + charCode;
 
-          referencedValue = entityDereferenceMap.get(hashCode);
+          // Same as getHashCode, but computed incrementally
+          hash1 = Math.imul(hash1, 33) ^ charCode;
+          hash2 = Math.imul(hash2, 65_599) ^ charCode;
+
+          const referencedValue = entityDereferenceMap.get((hash2 >>> 11) * 0x100000000 + (hash1 >>> 0));
 
           if (referencedValue !== undefined) {
             value = referencedValue;
             endIndex = index;
+          }
+
+          if (charCode === /* ; */ 59) {
+            break;
           }
         }
       }
@@ -188,59 +193,77 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
 // Standing on the shoulders of giants
 // https://github.com/mathiasbynens/he/blob/master/data/decode-map-overrides.json
-const entityOverrides: { [codePoint: number]: string } = {
-  128: '\u20AC',
-  130: '\u201A',
-  131: '\u0192',
-  132: '\u201E',
-  133: '\u2026',
-  134: '\u2020',
-  135: '\u2021',
-  136: '\u02C6',
-  137: '\u2030',
-  138: '\u0160',
-  139: '\u2039',
-  140: '\u0152',
-  142: '\u017D',
-  145: '\u2018',
-  146: '\u2019',
-  147: '\u201C',
-  148: '\u201D',
-  149: '\u2022',
-  150: '\u2013',
-  151: '\u2014',
-  152: '\u02DC',
-  153: '\u2122',
-  154: '\u0161',
-  155: '\u203A',
-  156: '\u0153',
-  158: '\u017E',
-  159: '\u0178',
-};
+const c1ControlMap = new Map([
+  [128, '\u20AC'],
+  [130, '\u201A'],
+  [131, '\u0192'],
+  [132, '\u201E'],
+  [133, '\u2026'],
+  [134, '\u2020'],
+  [135, '\u2021'],
+  [136, '\u02C6'],
+  [137, '\u2030'],
+  [138, '\u0160'],
+  [139, '\u2039'],
+  [140, '\u0152'],
+  [142, '\u017D'],
+  [145, '\u2018'],
+  [146, '\u2019'],
+  [147, '\u201C'],
+  [148, '\u201D'],
+  [149, '\u2022'],
+  [150, '\u2013'],
+  [151, '\u2014'],
+  [152, '\u02DC'],
+  [153, '\u2122'],
+  [154, '\u0161'],
+  [155, '\u203A'],
+  [156, '\u0153'],
+  [158, '\u017E'],
+  [159, '\u0178'],
+]);
 
-function getEntityReferenceHashCode(entity: string): number {
-  if (entity.length === 0) {
-    return 0;
+const HASH1_SEED = 5_381;
+const HASH2_SEED = 52_711;
+
+function getHashCode(input: string, startIndex: number, endIndex: number): number {
+  let hash1 = HASH1_SEED;
+  let hash2 = HASH2_SEED;
+
+  for (let i = startIndex; i < endIndex; ++i) {
+    const charCode = input.charCodeAt(i);
+
+    hash1 = Math.imul(hash1, 33) ^ charCode;
+    hash2 = Math.imul(hash2, 65_599) ^ charCode;
   }
 
-  let hashCode = 0;
-
-  for (let index = entity.charCodeAt(0) === /* & */ 38 ? 1 : 0; index < entity.length; ++index) {
-    const charCode = entity.charCodeAt(index);
-
-    if (!isEntityReferenceChar(charCode)) {
-      return 0;
-    }
-    hashCode = (hashCode << 5) - hashCode + entity.charCodeAt(index);
-  }
-
-  return hashCode;
+  return (hash2 >>> 11) * 0x100000000 + (hash1 >>> 0);
 }
 
-function isEntityReferenceChar(charCode: number): boolean {
+function isEntityReference(entity: string): boolean {
+  const startIndex = entity.charCodeAt(0) === /* & */ 38 ? 1 : 0;
+
+  // Semicolon is optional, but if present must be the last char
+  const endIndex = entity.charCodeAt(entity.length - 1) === /* ; */ 59 ? entity.length - 1 : entity.length;
+
+  if (startIndex >= endIndex) {
+    return false;
+  }
+
+  for (let index = startIndex; index < endIndex; ++index) {
+    const charCode = entity.charCodeAt(index);
+
+    if (!isEntityNameChar(charCode)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isEntityNameChar(charCode: number): boolean {
   return (
     (charCode >= /* a */ 97 && charCode <= /* z */ 122) ||
     (charCode >= /* A */ 65 && charCode <= /* Z */ 90) ||
-    charCode === /* ; */ 59
+    (charCode >= /* 0 */ 48 && charCode <= /* 9 */ 57)
   );
 }

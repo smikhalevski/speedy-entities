@@ -20,11 +20,11 @@ const valuesToDecode = [
 ];
 
 const valuesToEncode = [
-  // '___ü___😘❤️___&<>___',
+  // '___\u00FC___\uD83D\uDE18\u2764\uFE0F___&<>___',
   'abc', // ASCII text, noop
   '<>&', // XML entity
   '\u00FF\u2A7D', // non-ASCII text
-  '😘🔥', // surrogate pairs
+  '\uD83D\uDE18\uD83D\uDD25', // surrogate pairs
 ];
 
 const isAverageMeasure = true;

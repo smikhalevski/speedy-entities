@@ -14,5 +14,5 @@ test('encodes entities surrounded by text', () => {
 });
 
 test('does not encode surrogate pairs', () => {
-  expect(escapeXML('😘❤️')).toBe('😘❤️');
+  expect(escapeXML('\uD83D\uDE18\u2764\uFE0F')).toBe('\uD83D\uDE18\u2764\uFE0F');
 });
