@@ -42,25 +42,9 @@ export interface EntityDecoderOptions {
  * @returns A function that decodes entities in the string.
  */
 export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
-  const { entities, isNumericReferenceSemicolonRequired = false, areC1ControlsRemapped = true } = options;
+  const { entities = {}, isNumericReferenceSemicolonRequired = false, areC1ControlsRemapped = true } = options;
 
-  const entityDereferenceMap = new Map<number, string>();
-
-  let maximumEntityReferenceLength = 0;
-
-  if (entities !== undefined) {
-    for (const entity in entities) {
-      if (!isEntityReference(entity)) {
-        throw new Error('Invalid entity reference: ' + entity);
-      }
-
-      // Skip the leading ampersand
-      const startIndex = entity.charCodeAt(0) === /* & */ 38 ? 1 : 0;
-
-      maximumEntityReferenceLength = Math.max(maximumEntityReferenceLength, entity.length - startIndex);
-      entityDereferenceMap.set(getHashCode(entity, startIndex, entity.length), entities[entity]);
-    }
-  }
+  const { edgeKeys, edgeNodes, nodeValues, slotMask, slotShift } = createEntityTrie(entities);
 
   return input => {
     let output = '';
@@ -72,6 +56,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
     while (charIndex < inputLength - 1) {
       let startIndex = input.indexOf('&', charIndex);
+
       if (startIndex === -1) {
         break;
       }
@@ -129,7 +114,6 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
 
           if (isTerminated || !isNumericReferenceSemicolonRequired) {
             // Convert a code point to a string
-            // https://github.com/mathiasbynens/he/blob/master/src/he.js#L106-L134
 
             if (codePoint === 0 || (codePoint >= 0xd800 && codePoint <= 0xdfff) || codePoint > 0x10ffff) {
               // Null char code, or character reference is outside the permissible Unicode range
@@ -150,31 +134,37 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
         // Character entity reference
 
         let index = startIndex;
-        let hash1 = HASH1_SEED;
-        let hash2 = HASH2_SEED;
+        let node = 0;
 
-        while (index < inputLength && index - startIndex < maximumEntityReferenceLength) {
+        while (index < inputLength) {
           const charCode = input.charCodeAt(index);
 
-          if (charCode !== /* ; */ 59 && !isEntityNameChar(charCode)) {
+          // Edge keys are exact only for ASCII chars
+          if (charCode > 127) {
             break;
           }
 
+          const edgeKey = getEdgeKey(node, charCode);
+
+          let slotIndex = Math.imul(edgeKey, GOLDEN_RATIO) >>> slotShift;
+
+          while (edgeKeys[slotIndex] !== -1 && edgeKeys[slotIndex] !== edgeKey) {
+            slotIndex = (slotIndex + 1) & slotMask;
+          }
+
+          if (edgeKeys[slotIndex] === -1) {
+            // No entity name starts with chars read so far
+            break;
+          }
+
+          node = edgeNodes[slotIndex];
           ++index;
 
-          // Same as getHashCode, but computed incrementally
-          hash1 = Math.imul(hash1, 33) ^ charCode;
-          hash2 = Math.imul(hash2, 65_599) ^ charCode;
+          const nodeValue = nodeValues[node];
 
-          const referencedValue = entityDereferenceMap.get((hash2 >>> 11) * 0x100000000 + (hash1 >>> 0));
-
-          if (referencedValue !== undefined) {
-            value = referencedValue;
+          if (nodeValue !== undefined) {
+            value = nodeValue;
             endIndex = index;
-          }
-
-          if (charCode === /* ; */ 59) {
-            break;
           }
         }
       }
@@ -223,44 +213,105 @@ const c1ControlMap = new Map([
   [159, '\u0178'],
 ]);
 
-const HASH1_SEED = 5_381;
-const HASH2_SEED = 52_711;
+/**
+ * The maximum share of used slots in the edge table.
+ */
+const MAX_LOAD_FACTOR = 0.6;
 
-function getHashCode(input: string, startIndex: number, endIndex: number): number {
-  let hash1 = HASH1_SEED;
-  let hash2 = HASH2_SEED;
+/**
+ * 2^32 divided by the golden ratio (1.6180339887…), rounded down. Multiplying an edge key by it and taking the high
+ * bits of the product gives a slot index that depends on all bits of the key, so keys that differ only slightly, such
+ * as adjacent char codes or adjacent nodes, land far apart. Of all multipliers, the golden ratio spreads such keys most
+ * evenly, see Knuth, The Art of Computer Programming, Vol. 3, Section 6.4.
+ *
+ * The multiplier is odd, so distinct edge keys never produce the same product.
+ */
+const GOLDEN_RATIO = 0x9e3779b9;
 
-  for (let i = startIndex; i < endIndex; ++i) {
-    const charCode = input.charCodeAt(i);
-
-    hash1 = Math.imul(hash1, 33) ^ charCode;
-    hash2 = Math.imul(hash2, 65_599) ^ charCode;
-  }
-
-  return (hash2 >>> 11) * 0x100000000 + (hash1 >>> 0);
+// Char codes are ASCII, so they take the low 7 bits
+function getEdgeKey(node: number, charCode: number): number {
+  return (node << 7) | charCode;
 }
 
-function isEntityReference(entity: string): boolean {
-  const startIndex = entity.charCodeAt(0) === /* & */ 38 ? 1 : 0;
+/**
+ * Builds a trie of entity names, where each name prefix is a node and node 0 is the root. The edge from a node to its
+ * child is keyed by `(node << 7) | charCode`. Edges are stored in a hash table with
+ * [linear probing](https://en.wikipedia.org/wiki/Linear_probing), where the first slot to probe is picked by
+ * [Fibonacci hashing](https://en.wikipedia.org/wiki/Hash_function#Fibonacci_hashing) of the edge key.
+ *
+ * A lookup starts at the root and follows an edge for each char of the input. It stops when there's no edge for
+ * the next char. The last visited node that has a value is the longest matching entity name.
+ *
+ * @see https://softwareengineering.stackexchange.com/questions/402542
+ */
+function createEntityTrie(entities: Record<string, string>) {
+  const edgeMap = new Map<number, number>();
+  const nodeValues: Array<string | undefined> = [undefined];
 
-  // Semicolon is optional, but if present must be the last char
-  const endIndex = entity.charCodeAt(entity.length - 1) === /* ; */ 59 ? entity.length - 1 : entity.length;
+  for (const entity of Object.keys(entities)) {
+    // Skip the leading ampersand
+    const startIndex = entity.charCodeAt(0) === /* & */ 38 ? 1 : 0;
 
-  if (startIndex >= endIndex) {
-    return false;
-  }
+    // Semicolon is optional, but if present must be the last char
+    const endIndex = entity.charCodeAt(entity.length - 1) === /* ; */ 59 ? entity.length - 1 : entity.length;
 
-  for (let index = startIndex; index < endIndex; ++index) {
-    const charCode = entity.charCodeAt(index);
-
-    if (!isEntityNameChar(charCode)) {
-      return false;
+    if (startIndex >= endIndex) {
+      throw new Error('Invalid entity reference: ' + entity);
     }
+
+    let node = 0;
+
+    for (let index = startIndex; index < entity.length; ++index) {
+      const charCode = entity.charCodeAt(index);
+
+      if (index < endIndex && !isEntityNameCharCode(charCode)) {
+        throw new Error('Invalid entity reference: ' + entity);
+      }
+
+      const edgeKey = getEdgeKey(node, charCode);
+
+      let childNode = edgeMap.get(edgeKey);
+
+      if (childNode === undefined) {
+        childNode = nodeValues.push(undefined) - 1;
+        edgeMap.set(edgeKey, childNode);
+      }
+
+      node = childNode;
+    }
+
+    // "&lt;" and "lt;" have the same node, so the latter overwrites the former
+    nodeValues[node] = entities[entity];
   }
-  return true;
+
+  let tableSize = 16;
+
+  while (tableSize * MAX_LOAD_FACTOR < edgeMap.size) {
+    tableSize <<= 1;
+  }
+
+  const slotMask = tableSize - 1;
+  const slotShift = Math.clz32(tableSize) + 1;
+
+  // -1 marks an empty slot
+  const edgeKeys = new Int32Array(tableSize).fill(-1);
+  const edgeNodes = new Int32Array(tableSize);
+
+  for (const [edgeKey, node] of edgeMap) {
+    let slotIndex = Math.imul(edgeKey, GOLDEN_RATIO) >>> slotShift;
+
+    while (edgeKeys[slotIndex] !== -1) {
+      slotIndex = (slotIndex + 1) & slotMask;
+    }
+
+    edgeKeys[slotIndex] = edgeKey;
+    edgeNodes[slotIndex] = node;
+  }
+
+  return { edgeKeys, edgeNodes, nodeValues, slotMask, slotShift };
 }
 
-function isEntityNameChar(charCode: number): boolean {
+function isEntityNameCharCode(charCode: number): boolean {
   return (
     (charCode >= /* a */ 97 && charCode <= /* z */ 122) ||
     (charCode >= /* A */ 65 && charCode <= /* Z */ 90) ||
