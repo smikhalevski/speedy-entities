@@ -2,7 +2,7 @@ import { describe, measure, test } from 'toofast';
 import * as lib from '../../lib/index.js';
 import * as entities from 'entities';
 import * as htmlEntities from 'html-entities';
-import he from 'he';
+import * as he from 'he';
 
 const valuesToDecode = [
   '___&uuml;___&#x3f;___',
