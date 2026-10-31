@@ -10,9 +10,9 @@ test('custom decoder example', () => {
     isNumericReferenceSemicolonRequired: true,
   });
 
-  expect(decode('&foo;'), 'okay');
+  expect(decode('&foo;')).toBe('okay');
 
-  expect(decode('&foo'), '&foo');
+  expect(decode('&foo')).toBe('&foo');
 
-  expect(decode('&#X61;&#x62;&#x63;'), 'abc');
+  expect(decode('&#X61;&#x62;&#x63;')).toBe('abc');
 });

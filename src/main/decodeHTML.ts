@@ -7,4 +7,5 @@ import htmlEntities from './html-entities.js';
 export const decodeHTML = createEntityDecoder({
   entities: htmlEntities,
   isNumericReferenceSemicolonRequired: false,
+  areC1ControlsRemapped: true,
 });

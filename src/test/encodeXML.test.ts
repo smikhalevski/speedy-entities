@@ -14,5 +14,10 @@ test('encodes entities surrounded by text', () => {
 });
 
 test('encodes surrogate pairs', () => {
-  expect(encodeXML('😘❤️')).toBe('&#x1f618;&#x2764;&#xfe0f;');
+  expect(encodeXML('\uD83D\uDE18\u2764\uFE0F')).toBe('&#x1f618;&#x2764;&#xfe0f;');
+});
+
+test('encodes lone surrogates', () => {
+  expect(encodeXML('\uD83Daaa')).toBe('&#xd83d;aaa');
+  expect(encodeXML('\uD83D')).toBe('&#xd83d;');
 });

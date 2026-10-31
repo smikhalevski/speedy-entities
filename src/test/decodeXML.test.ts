@@ -44,13 +44,16 @@ test('decodes multiple entities', () => {
 });
 
 test('decodes astral characters', () => {
-  expect(decodeXML('&#x1d306;')).toBe('\ud834\udf06');
-  expect(decodeXML('&#x1d11e;')).toBe('\ud834\udd1e');
+  expect(decodeXML('&#x1d306;')).toBe('\uD834\uDF06');
+  expect(decodeXML('&#x1d11e;')).toBe('\uD834\uDD1E');
 });
 
-test('decodes astral special characters', () => {
-  expect(decodeXML('&#x80;')).toBe('\u20ac');
-  expect(decodeXML('&#x110000;')).toBe('\ufffd');
+test('does not remap C1 controls', () => {
+  expect(decodeXML('&#x80;')).toBe('\u0080');
+});
+
+test('decodes out-of-range code points as a replacement character', () => {
+  expect(decodeXML('&#x110000;')).toBe('\uFFFD');
 });
 
 test('decodes perf test samples', () => {

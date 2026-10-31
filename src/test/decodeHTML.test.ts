@@ -20,9 +20,29 @@ test('decodes unterminated hex entities', () => {
   expect(decodeHTML('&#x3cZZZ')).toBe('<ZZZ');
 });
 
+test('decodes an unterminated single digit entity at the end of input', () => {
+  expect(decodeHTML('aaa&#9')).toBe('aaa\t');
+});
+
+test('decodes numeric entities with leading zeros', () => {
+  expect(decodeHTML('&#x0000041;')).toBe('A');
+});
+
+test('decodes numeric entities that are not C1 controls', () => {
+  expect(decodeHTML('&#160;')).toBe('\u00A0');
+});
+
+test('does not treat control characters as digits', () => {
+  expect(decodeHTML('&#\u0011;')).toBe('&#\u0011;');
+});
+
 test('decodes terminated named entities', () => {
   expect(decodeHTML('&lt;')).toBe('<');
   expect(decodeHTML('&NotNestedGreaterGreater;')).toBe('\u2AA2\u0338');
+});
+
+test('decodes named entities that contain digits', () => {
+  expect(decodeHTML('&frac12;')).toBe('\u00BD');
 });
 
 test('decodes unterminated legacy named entities', () => {
@@ -53,13 +73,13 @@ test('decodes multiple entities', () => {
 });
 
 test('decodes astral characters', () => {
-  expect(decodeHTML('&#x1d306')).toBe('\ud834\udf06');
-  expect(decodeHTML('&#x1d11e')).toBe('\ud834\udd1e');
+  expect(decodeHTML('&#x1d306')).toBe('\uD834\uDF06');
+  expect(decodeHTML('&#x1d11e')).toBe('\uD834\uDD1E');
 });
 
 test('decodes astral special characters', () => {
-  expect(decodeHTML('&#x80')).toBe('\u20ac');
-  expect(decodeHTML('&#x110000')).toBe('\ufffd');
+  expect(decodeHTML('&#x80')).toBe('\u20AC');
+  expect(decodeHTML('&#x110000')).toBe('\uFFFD');
 });
 
 test('decodes perf test samples', () => {

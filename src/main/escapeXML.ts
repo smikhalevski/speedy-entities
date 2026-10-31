@@ -1,11 +1,15 @@
-const re = /["&'<>]/g;
+const escapedCharRegExp = /["&'<>]/g;
 
+/**
+ * Replaces `"&'<>` with XML entities. Non-ASCII characters are preserved, so the output must be stored in a Unicode
+ * encoding. Use {@linkcode encodeXML} to get an ASCII-only output.
+ */
 export function escapeXML(input: string): string {
   let output = '';
   let textIndex = 0;
 
-  while (re.test(input)) {
-    const lastIndex = re.lastIndex;
+  while (escapedCharRegExp.test(input)) {
+    const lastIndex = escapedCharRegExp.lastIndex;
     const startIndex = lastIndex - 1;
     const charCode = input.charCodeAt(startIndex);
 
