@@ -102,14 +102,13 @@ test('supports single digit numeric references', () => {
 test('remaps C1 controls to Windows-1252 characters by default', () => {
   const decode = createEntityDecoder();
 
-  expect(decode('&#128;')).toBe('\u20AC');
-  expect(decode('&#159;')).toBe('\u0178');
-});
+  // U+0080 to U+009F, those without a Windows-1252 counterpart are preserved
+  const expectedValues =
+    '\u20AC\u0081\u201A\u0192\u201E\u2026\u2020\u2021\u02C6\u2030\u0160\u2039\u0152\u008D\u017D\u008F\u0090\u2018\u2019\u201C\u201D\u2022\u2013\u2014\u02DC\u2122\u0161\u203A\u0153\u009D\u017E\u0178';
 
-test('preserves C1 controls that have no Windows-1252 counterpart', () => {
-  const decode = createEntityDecoder();
-
-  expect(decode('&#129;')).toBe('\u0081');
+  for (let codePoint = 0x80; codePoint <= 0x9f; ++codePoint) {
+    expect(decode('&#' + codePoint + ';')).toBe(expectedValues[codePoint - 0x80]);
+  }
 });
 
 test('renders illegal code points as a replacement character', () => {
@@ -137,6 +136,8 @@ test('preserves invalid entities as is', () => {
   const decode = createEntityDecoder();
 
   expect(decode('&#;')).toBe('&#;');
+  expect(decode('&#')).toBe('&#');
+  expect(decode('&#x')).toBe('&#x');
   expect(decode('&;')).toBe('&;');
   expect(decode('&#x;')).toBe('&#x;');
   expect(decode('&#X;')).toBe('&#X;');

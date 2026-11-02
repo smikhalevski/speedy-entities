@@ -114,6 +114,8 @@ export function createEntityTrieDecoder(
       let value: string | undefined;
       let endIndex = startIndex;
 
+      // Both reads below must stay in bounds: reading past the end of the input makes V8 deoptimize this function,
+      // and it stays about twice as slow on short inputs afterwards
       if (startIndex < inputLength - 1 && input.charCodeAt(startIndex) === /* # */ 35) {
         // Numeric character reference
 
@@ -167,8 +169,7 @@ export function createEntityTrieDecoder(
               // Null char code, or character reference is outside the permissible Unicode range
               value = '\uFFFD';
             } else if (areC1ControlsRemapped && codePoint >= 0x80 && codePoint <= 0x9f) {
-              // Some C1 controls don't have a Windows-1252 counterpart and are preserved
-              value = c1ControlMap.get(codePoint) ?? String.fromCharCode(codePoint);
+              value = c1ControlValues[codePoint - 0x80];
             } else {
               value = String.fromCodePoint(codePoint);
             }
@@ -225,9 +226,13 @@ export function createEntityTrieDecoder(
         }
       }
 
-      // Concat decoded entity and preceding substring
       if (value !== undefined) {
-        output += textIndex === charIndex ? value : input.slice(textIndex, charIndex) + value;
+        // Appending the preceding text and the value separately avoids joining them into a new string first. Once
+        // the output is long enough to be a rope, each append only adds a node, even if the encodings differ.
+        if (textIndex !== charIndex) {
+          output += input.slice(textIndex, charIndex);
+        }
+        output += value;
         textIndex = endIndex;
       }
 
@@ -237,37 +242,20 @@ export function createEntityTrieDecoder(
   };
 }
 
-// Standing on the shoulders of giants
-// https://github.com/mathiasbynens/he/blob/master/data/decode-map-overrides.json
-const c1ControlMap = new Map([
-  [128, '\u20AC'],
-  [130, '\u201A'],
-  [131, '\u0192'],
-  [132, '\u201E'],
-  [133, '\u2026'],
-  [134, '\u2020'],
-  [135, '\u2021'],
-  [136, '\u02C6'],
-  [137, '\u2030'],
-  [138, '\u0160'],
-  [139, '\u2039'],
-  [140, '\u0152'],
-  [142, '\u017D'],
-  [145, '\u2018'],
-  [146, '\u2019'],
-  [147, '\u201C'],
-  [148, '\u201D'],
-  [149, '\u2022'],
-  [150, '\u2013'],
-  [151, '\u2014'],
-  [152, '\u02DC'],
-  [153, '\u2122'],
-  [154, '\u0161'],
-  [155, '\u203A'],
-  [156, '\u0153'],
-  [158, '\u017E'],
-  [159, '\u0178'],
-]);
+/**
+ * Windows-1252 chars for the C1 control code points U+0080 to U+009F. Code points that have no Windows-1252
+ * counterpart are preserved.
+ *
+ * Standing on the shoulders of giants
+ * https://github.com/mathiasbynens/he/blob/master/data/decode-map-overrides.json
+ */
+// prettier-ignore
+const c1ControlValues = [
+  '\u20AC', '\u0081', '\u201A', '\u0192', '\u201E', '\u2026', '\u2020', '\u2021',
+  '\u02C6', '\u2030', '\u0160', '\u2039', '\u0152', '\u008D', '\u017D', '\u008F',
+  '\u0090', '\u2018', '\u2019', '\u201C', '\u201D', '\u2022', '\u2013', '\u2014',
+  '\u02DC', '\u2122', '\u0161', '\u203A', '\u0153', '\u009D', '\u017E', '\u0178',
+];
 
 /**
  * An optional ampersand, a name made of the ASCII chars that XML allows in names, and an optional semicolon.
