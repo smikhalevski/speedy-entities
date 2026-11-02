@@ -30,6 +30,19 @@ test('supports named entities that are listed before their prefixes', () => {
   expect(decode('&a &ab &ab;')).toBe('bbb aaa ccc');
 });
 
+test('decodes references at the end of the input', () => {
+  const decode = createEntityDecoder({ entities: { a: 'bbb' } });
+
+  expect(decode('&a')).toBe('bbb');
+  expect(decode('&a&a')).toBe('bbbbbb');
+});
+
+test('decodes a reference that follows a bare ampersand', () => {
+  const decode = createEntityDecoder({ entities: { a: 'bbb' } });
+
+  expect(decode('&&a')).toBe('&bbb');
+});
+
 test('decodes the longest known name when a longer name shares its prefix', () => {
   const decode = createEntityDecoder({ entities: { ab: 'aaa', abcd: 'bbb' } });
 

@@ -98,18 +98,14 @@ export function createEntityTrieDecoder(
     let output = '';
 
     let textIndex = 0;
-    let charIndex = 0;
 
     const inputLength = input.length;
 
-    while (charIndex < inputLength - 1) {
-      let startIndex = input.indexOf('&', charIndex);
+    // A reference is "&" followed by at least one char, so it can't start at the last char
+    let charIndex = inputLength > 1 ? input.indexOf('&') : -1;
 
-      if (startIndex === -1) {
-        break;
-      }
-
-      charIndex = startIndex++;
+    while (charIndex !== -1 && charIndex < inputLength - 1) {
+      let startIndex = charIndex + 1;
 
       let value: string | undefined;
       let endIndex = startIndex;
@@ -236,7 +232,16 @@ export function createEntityTrieDecoder(
         textIndex = endIndex;
       }
 
-      charIndex = endIndex;
+      if (endIndex >= inputLength - 1) {
+        break;
+      }
+
+      // Entities often follow each other, and checking the next char is cheaper than calling indexOf
+      if (value === undefined || input.charCodeAt(endIndex) !== /* & */ 38) {
+        charIndex = input.indexOf('&', endIndex);
+      } else {
+        charIndex = endIndex;
+      }
     }
     return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.slice(textIndex);
   };
