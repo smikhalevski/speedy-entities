@@ -30,6 +30,12 @@ test('supports named entities that are listed before their prefixes', () => {
   expect(decode('&a &ab &ab;')).toBe('bbb aaa ccc');
 });
 
+test('decodes the longest known name when a longer name shares its prefix', () => {
+  const decode = createEntityDecoder({ entities: { ab: 'aaa', abcd: 'bbb' } });
+
+  expect(decode('&abc')).toBe('aaac');
+});
+
 test('uses the last value of named entities that have the same name', () => {
   const decode = createEntityDecoder({ entities: { '&aaa;': 'bbb', 'aaa;': 'ccc' } });
 

@@ -1,16 +1,32 @@
 import { expect, test } from 'vitest';
-import { createEntityTrie } from '../main/createEntityDecoder.js';
+import { createEntityTrie, createEntityTrieDecoder } from '../main/createEntityDecoder.js';
 
-test('sizes the edge table by the max load factor', () => {
-  // 10 edges
-  const entities = { aaaaaaaaaa: 'bbb' };
+test('keeps the child of any ASCII char in bounds', () => {
+  // A long chain after the last node with several children
+  const { nodeBases, nodeChecks } = createEntityTrie({ 'a-z': 'aaa', aaa: 'bbb', ['z'.repeat(300)]: 'ccc' });
 
-  expect(createEntityTrie(entities).edgeKeys.length).toBe(32);
-  expect(createEntityTrie(entities, { maxLoadFactor: 0.7 }).edgeKeys.length).toBe(16);
+  for (let node = 0; node < nodeChecks.length; ++node) {
+    if (node === 0 || nodeChecks[node] !== -1) {
+      expect(nodeBases[node]).toBeGreaterThanOrEqual(0);
+      expect(nodeBases[node] + 127).toBeLessThan(nodeChecks.length);
+    }
+  }
 });
 
-test('throws if the max load factor is invalid', () => {
-  expect(() => createEntityTrie({}, { maxLoadFactor: 1 })).toThrow(
-    'maxLoadFactor must be greater than 0 and less than 1'
-  );
+test('places every name when nodes do not pack tightly', () => {
+  const alphabet = '-.:_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  const entities: Record<string, string> = {};
+
+  // Every node of the first level has a child for every char, so children are spread out
+  for (const a of alphabet) {
+    for (const b of alphabet) {
+      entities[a + b] = a + b + '!';
+    }
+  }
+
+  const decode = createEntityTrieDecoder(createEntityTrie(entities), {});
+
+  for (const name of Object.keys(entities)) {
+    expect(decode('&' + name)).toBe(name + '!');
+  }
 });

@@ -46,46 +46,24 @@ export interface EntityDecoderOptions {
 }
 
 /**
- * The options recognized by {@linkcode createEntityTrie}.
- */
-export interface EntityTrieOptions {
-  /**
-   * The maximum share of used slots in the edge table. A lower load factor makes lookups probe fewer slots, but the
-   * table takes more memory. Must be greater than 0 and less than 1, since lookups stop at an empty slot.
-   *
-   * @default 0.6
-   */
-  maxLoadFactor?: number;
-}
-
-/**
  * A trie of entity names, see {@linkcode createEntityTrie}.
  */
 export interface EntityTrie {
   /**
-   * Edge keys stored in a hash table, -1 marks an empty slot.
+   * The offset of the children of a node: the child for a char is at `nodeBases[node] + charCode`.
    */
-  edgeKeys: Int32Array;
+  nodeBases: Int32Array;
 
   /**
-   * The node that the edge in the same slot of {@linkcode edgeKeys} leads to.
+   * The parent of a node shifted left by one bit, with the low bit set if an entity name ends at the node. -1 marks
+   * an unused node.
    */
-  edgeNodes: Int32Array;
+  nodeChecks: Int32Array;
 
   /**
-   * The decoded value of each node, or `undefined` if no entity name ends at the node.
+   * The decoded value of a node, or `undefined` if no entity name ends at the node.
    */
   nodeValues: Array<string | undefined>;
-
-  /**
-   * The table size minus 1, wraps slot indices during probing.
-   */
-  slotMask: number;
-
-  /**
-   * The shift that turns the hash of an edge key into a slot index.
-   */
-  slotShift: number;
 }
 
 /**
@@ -114,7 +92,7 @@ export function createEntityTrieDecoder(
     isAttributeValue = false,
   } = options;
 
-  const { edgeKeys, edgeNodes, nodeValues, slotMask, slotShift } = entityTrie;
+  const { nodeBases, nodeChecks, nodeValues } = entityTrie;
 
   return input => {
     let output = '';
@@ -209,31 +187,25 @@ export function createEntityTrieDecoder(
         while (index < inputLength) {
           const charCode = input.charCodeAt(index);
 
-          // Edge keys are exact only for ASCII chars
+          // Only ASCII chars have nodes, and bases keep base + charCode in bounds for them
           if (charCode > 127) {
             break;
           }
 
-          const edgeKey = (node << 7) | charCode;
+          const childNode = nodeBases[node] + charCode;
+          const childCheck = nodeChecks[childNode];
 
-          let slotIndex = Math.imul(edgeKey, GOLDEN_RATIO) >>> slotShift;
-
-          while (edgeKeys[slotIndex] !== -1 && edgeKeys[slotIndex] !== edgeKey) {
-            slotIndex = (slotIndex + 1) & slotMask;
-          }
-
-          if (edgeKeys[slotIndex] === -1) {
+          if (childCheck >> 1 !== node) {
             // No entity name starts with chars read so far
             break;
           }
 
-          node = edgeNodes[slotIndex];
+          node = childNode;
           ++index;
 
-          const nodeValue = nodeValues[node];
-
-          if (nodeValue !== undefined) {
-            value = nodeValue;
+          if ((childCheck & 1) === 1) {
+            // An entity name ends at the node
+            value = nodeValues[node];
             endIndex = index;
           }
         }
@@ -298,44 +270,26 @@ const c1ControlMap = new Map([
 ]);
 
 /**
- * 2^32 divided by the golden ratio (1.6180339887…), rounded down. Multiplying an edge key by it and taking the high
- * bits of the product gives a slot index that depends on all bits of the key, so keys that differ only slightly, such
- * as adjacent char codes or adjacent nodes, land far apart. Of all multipliers, the golden ratio spreads such keys most
- * evenly, see Knuth, The Art of Computer Programming, Vol. 3, Section 6.4.
- *
- * The multiplier is odd, so distinct edge keys never produce the same product.
- */
-const GOLDEN_RATIO = 0x9e3779b9;
-
-/**
  * An optional ampersand, a name made of the ASCII chars that XML allows in names, and an optional semicolon.
  */
 const entityReferenceRegExp = /^&?[a-zA-Z0-9.:_-]+;?$/;
 
 /**
- * Builds a trie of entity names, where each name prefix is a node and node 0 is the root. The edge from a node to its
- * child is keyed by `(node << 7) | charCode`, char codes are ASCII, so they take the low 7 bits. Edges are stored in
- * a hash table with [linear probing](https://en.wikipedia.org/wiki/Linear_probing), where the first slot to probe is
- * picked by [Fibonacci hashing](https://en.wikipedia.org/wiki/Hash_function#Fibonacci_hashing) of the edge key.
+ * Builds a [double-array trie](https://en.wikipedia.org/wiki/Trie#Implementation_strategies) of entity names, where
+ * each name prefix is a node and node 0 is the root. The child of a node for a char is at
+ * `nodeBases[node] + charCode`, and it belongs to the node if `nodeChecks[child] >> 1` is the node. So a lookup step
+ * is two array reads, with no hashing or probing.
  *
- * A lookup starts at the root and follows an edge for each char of the input. It stops when there's no edge for
- * the next char. The last visited node that has a value is the longest matching entity name.
- *
- * @see https://softwareengineering.stackexchange.com/questions/402542
+ * A lookup starts at the root and follows a child for each char of the input. It stops when there's no child for
+ * the next char. The last visited node where an entity name ends is the longest matching entity name.
  */
-export function createEntityTrie(entities: Record<string, string>, options: EntityTrieOptions = {}): EntityTrie {
-  const { maxLoadFactor = 0.6 } = options;
-
-  if (!(maxLoadFactor > 0 && maxLoadFactor < 1)) {
-    throw new Error('maxLoadFactor must be greater than 0 and less than 1');
-  }
-
+export function createEntityTrie(entities: Record<string, string>): EntityTrie {
   const entityReferences = Object.keys(entities);
 
   // Entity tables are usually sorted, so references are sorted only if they aren't
   return (
-    buildEntityTrie(entities, entityReferences, maxLoadFactor) ??
-    buildEntityTrie(entities, entityReferences.sort(compareEntityReferences), maxLoadFactor)!
+    buildEntityTrie(entities, entityReferences) ??
+    buildEntityTrie(entities, entityReferences.sort(compareEntityReferences))!
   );
 }
 
@@ -343,22 +297,27 @@ export function createEntityTrie(entities: Record<string, string>, options: Enti
  * Builds a trie from entity references sorted by name, or returns `undefined` if they aren't sorted.
  *
  * In sorted order, the only nodes that a name shares with preceding names are the nodes of the prefix it shares with
- * the previous name, and the rest of its nodes are new. So nodes are added without looking up edges, and edges are
- * inserted into a hash table once its size is known.
+ * the previous name, and the rest of its nodes are new. So nodes are numbered in preorder without looking anything
+ * up, and the first child of a node is the next node. Then nodes are placed in the double array in the same order,
+ * so a node is placed after its parent.
  */
-function buildEntityTrie(
-  entities: Record<string, string>,
-  entityReferences: string[],
-  maxLoadFactor: number
-): EntityTrie | undefined {
+function buildEntityTrie(entities: Record<string, string>, entityReferences: string[]): EntityTrie | undefined {
   let charCount = 0;
 
   for (const entityReference of entityReferences) {
     charCount += entityReference.length;
   }
 
-  // The key of the edge that leads to a node, each char adds at most one node
-  const incomingEdgeKeys = new Int32Array(charCount + 1);
+  // Each char adds at most one node
+  const maxNodeCount = charCount + 1;
+
+  const nodeChars = new Uint8Array(maxNodeCount);
+
+  // Bit 0 is set if an entity name ends at the node, bit 1 is set if the node has children
+  const nodeFlags = new Uint8Array(maxNodeCount);
+
+  // The next child of the same parent, or 0 for the last child
+  const nextSiblings = new Int32Array(maxNodeCount);
 
   // The node of each entity reference
   const referenceNodes = new Int32Array(entityReferences.length);
@@ -399,52 +358,119 @@ function buildEntityTrie(
       return undefined;
     }
 
+    if (depth < nameLength && depth < previousNameLength) {
+      // The previous name went through another child of the node at this depth
+      nextSiblings[pathNodes[depth + 1]] = nodeCount;
+    }
+
     for (; depth < nameLength; ++depth) {
-      incomingEdgeKeys[nodeCount] = (pathNodes[depth] << 7) | name.charCodeAt(depth);
+      nodeFlags[pathNodes[depth]] |= 2;
+      nodeChars[nodeCount] = name.charCodeAt(depth);
       pathNodes[depth + 1] = nodeCount++;
     }
 
+    nodeFlags[pathNodes[nameLength]] |= 1;
     referenceNodes[referenceIndex] = pathNodes[nameLength];
     previousName = name;
   }
 
-  const nodeValues = new Array<string | undefined>(nodeCount).fill(undefined);
+  // Grows if nodes don't pack tightly
+  let size = nodeCount + 512;
+  let nodeBases = new Int32Array(size);
+  let nodeChecks = new Int32Array(size).fill(-1);
+
+  // The double-array index of each node
+  const nodeIndexes = new Int32Array(nodeCount);
+
+  // Indexes below 128 stay unused, so a base is never negative and base + charCode is in bounds for any ASCII char
+  let firstUnusedIndex = 128;
+
+  // The largest index placed by a node with several children, other children are placed before firstUnusedIndex
+  let maxIndex = 128;
+
+  for (let node = 0; node < nodeCount; ++node) {
+    if ((nodeFlags[node] & 2) === 0) {
+      continue;
+    }
+
+    const nodeIndex = nodeIndexes[node];
+    const firstChild = node + 1;
+    const hasSiblings = nextSiblings[firstChild] !== 0;
+
+    // Children are sorted by char, so the first child lands on the first unused index
+    let base = firstUnusedIndex - nodeChars[firstChild];
+
+    // Find a base that puts all children on unused indexes
+    for (;;) {
+      if (base + 128 > size) {
+        size <<= 1;
+        nodeBases = growInt32Array(nodeBases, size, 0);
+        nodeChecks = growInt32Array(nodeChecks, size, -1);
+      }
+      if (!hasSiblings) {
+        break;
+      }
+
+      let isUnused = true;
+
+      for (let child = firstChild; child !== 0; child = nextSiblings[child]) {
+        if (nodeChecks[base + nodeChars[child]] !== -1) {
+          isUnused = false;
+          break;
+        }
+      }
+      if (isUnused) {
+        break;
+      }
+      ++base;
+    }
+
+    nodeBases[nodeIndex] = base;
+
+    if (!hasSiblings) {
+      // Most nodes have a single child
+      nodeChecks[firstUnusedIndex] = (nodeIndex << 1) | (nodeFlags[firstChild] & 1);
+      nodeIndexes[firstChild] = firstUnusedIndex;
+    } else {
+      for (let child = firstChild; child !== 0; child = nextSiblings[child]) {
+        const childIndex = base + nodeChars[child];
+
+        nodeChecks[childIndex] = (nodeIndex << 1) | (nodeFlags[child] & 1);
+        nodeIndexes[child] = childIndex;
+
+        if (childIndex > maxIndex) {
+          maxIndex = childIndex;
+        }
+      }
+    }
+
+    while (firstUnusedIndex < size && nodeChecks[firstUnusedIndex] !== -1) {
+      ++firstUnusedIndex;
+    }
+  }
+
+  if (maxIndex < firstUnusedIndex) {
+    maxIndex = firstUnusedIndex;
+  }
+
+  // Keep base + charCode in bounds for any ASCII char
+  const finalSize = maxIndex + 128;
+  const nodeValues = new Array<string | undefined>(finalSize).fill(undefined);
 
   for (let referenceIndex = 0; referenceIndex < entityReferences.length; ++referenceIndex) {
     // "&lt;" and "lt;" have the same node, so the latter overwrites the former
-    nodeValues[referenceNodes[referenceIndex]] = entities[entityReferences[referenceIndex]];
+    nodeValues[nodeIndexes[referenceNodes[referenceIndex]]] = entities[entityReferences[referenceIndex]];
   }
 
-  // Each node except the root has an incoming edge
-  const edgeCount = nodeCount - 1;
+  return { nodeBases: nodeBases.slice(0, finalSize), nodeChecks: nodeChecks.slice(0, finalSize), nodeValues };
+}
 
-  let tableSize = 16;
+function growInt32Array(array: Int32Array, size: number, fillValue: number): Int32Array<ArrayBuffer> {
+  const grownArray = new Int32Array(size).fill(fillValue, array.length);
 
-  while (tableSize * maxLoadFactor < edgeCount) {
-    tableSize <<= 1;
-  }
+  grownArray.set(array);
 
-  const slotMask = tableSize - 1;
-  const slotShift = Math.clz32(tableSize) + 1;
-
-  // -1 marks an empty slot
-  const edgeKeys = new Int32Array(tableSize).fill(-1);
-  const edgeNodes = new Int32Array(tableSize);
-
-  for (let node = 1; node < nodeCount; ++node) {
-    const edgeKey = incomingEdgeKeys[node];
-
-    let slotIndex = Math.imul(edgeKey, GOLDEN_RATIO) >>> slotShift;
-
-    while (edgeKeys[slotIndex] !== -1) {
-      slotIndex = (slotIndex + 1) & slotMask;
-    }
-
-    edgeKeys[slotIndex] = edgeKey;
-    edgeNodes[slotIndex] = node;
-  }
-
-  return { edgeKeys, edgeNodes, nodeValues, slotMask, slotShift };
+  return grownArray;
 }
 
 // Sort is stable, so "&lt;" and "lt;" keep their order
