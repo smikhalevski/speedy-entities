@@ -46,6 +46,49 @@ export interface EntityDecoderOptions {
 }
 
 /**
+ * The options recognized by {@linkcode createEntityTrie}.
+ */
+export interface EntityTrieOptions {
+  /**
+   * The maximum share of used slots in the edge table. A lower load factor makes lookups probe fewer slots, but the
+   * table takes more memory. Must be greater than 0 and less than 1, since lookups stop at an empty slot.
+   *
+   * @default 0.6
+   */
+  maxLoadFactor?: number;
+}
+
+/**
+ * A trie of entity names, see {@linkcode createEntityTrie}.
+ */
+export interface EntityTrie {
+  /**
+   * Edge keys stored in a hash table, -1 marks an empty slot.
+   */
+  edgeKeys: Int32Array;
+
+  /**
+   * The node that the edge in the same slot of {@linkcode edgeKeys} leads to.
+   */
+  edgeNodes: Int32Array;
+
+  /**
+   * The decoded value of each node, or `undefined` if no entity name ends at the node.
+   */
+  nodeValues: Array<string | undefined>;
+
+  /**
+   * The table size minus 1, wraps slot indices during probing.
+   */
+  slotMask: number;
+
+  /**
+   * The shift that turns the hash of an edge key into a slot index.
+   */
+  slotShift: number;
+}
+
+/**
  * Creates an entity decoder that rewrites numeric and named entities found in input to their respective values.
  *
  * @param options The decoder options.
@@ -62,7 +105,7 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
  * a trie instead of building their own.
  */
 export function createEntityTrieDecoder(
-  entityTrie: ReturnType<typeof createEntityTrie>,
+  entityTrie: EntityTrie,
   options: Omit<EntityDecoderOptions, 'entities'>
 ): (input: string) => string {
   const {
@@ -255,11 +298,6 @@ const c1ControlMap = new Map([
 ]);
 
 /**
- * The maximum share of used slots in the edge table.
- */
-const MAX_LOAD_FACTOR = 0.6;
-
-/**
  * 2^32 divided by the golden ratio (1.6180339887…), rounded down. Multiplying an edge key by it and taking the high
  * bits of the product gives a slot index that depends on all bits of the key, so keys that differ only slightly, such
  * as adjacent char codes or adjacent nodes, land far apart. Of all multipliers, the golden ratio spreads such keys most
@@ -285,13 +323,19 @@ const entityReferenceRegExp = /^&?[a-zA-Z0-9.:_-]+;?$/;
  *
  * @see https://softwareengineering.stackexchange.com/questions/402542
  */
-export function createEntityTrie(entities: Record<string, string>) {
+export function createEntityTrie(entities: Record<string, string>, options: EntityTrieOptions = {}): EntityTrie {
+  const { maxLoadFactor = 0.6 } = options;
+
+  if (!(maxLoadFactor > 0 && maxLoadFactor < 1)) {
+    throw new Error('maxLoadFactor must be greater than 0 and less than 1');
+  }
+
   const entityReferences = Object.keys(entities);
 
   // Entity tables are usually sorted, so references are sorted only if they aren't
   return (
-    buildEntityTrie(entities, entityReferences) ??
-    buildEntityTrie(entities, entityReferences.sort(compareEntityReferences))!
+    buildEntityTrie(entities, entityReferences, maxLoadFactor) ??
+    buildEntityTrie(entities, entityReferences.sort(compareEntityReferences), maxLoadFactor)!
   );
 }
 
@@ -302,7 +346,11 @@ export function createEntityTrie(entities: Record<string, string>) {
  * the previous name, and the rest of its nodes are new. So nodes are added without looking up edges, and edges are
  * inserted into a hash table once its size is known.
  */
-function buildEntityTrie(entities: Record<string, string>, entityReferences: string[]) {
+function buildEntityTrie(
+  entities: Record<string, string>,
+  entityReferences: string[],
+  maxLoadFactor: number
+): EntityTrie | undefined {
   let charCount = 0;
 
   for (const entityReference of entityReferences) {
@@ -372,7 +420,7 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
 
   let tableSize = 16;
 
-  while (tableSize * MAX_LOAD_FACTOR < edgeCount) {
+  while (tableSize * maxLoadFactor < edgeCount) {
     tableSize <<= 1;
   }
 
