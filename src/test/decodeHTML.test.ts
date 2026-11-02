@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { decodeHTML } from '../main/decodeHTML.js';
+import htmlEntities from '../main/html-entities.js';
 
 test('decodes terminated decimal entities', () => {
   expect(decodeHTML('&#60;')).toBe('<');
@@ -47,6 +48,16 @@ test('decodes named entities that contain digits', () => {
 
 test('decodes unterminated legacy named entities', () => {
   expect(decodeHTML('&lt')).toBe('<');
+});
+
+test('decodes a legacy entity followed by a partial match of a longer entity', () => {
+  expect(decodeHTML('&notit;')).toBe('\u00ACit;');
+});
+
+test('decodes every HTML entity', () => {
+  for (const [entity, value] of Object.entries(htmlEntities)) {
+    expect(decodeHTML('&' + entity)).toBe(value);
+  }
 });
 
 test('ignores unterminated non-legacy named entities', () => {

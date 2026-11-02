@@ -21,7 +21,7 @@ test('ignores unterminated hex entities', () => {
 });
 
 test('decodes known named entities', () => {
-  expect(decodeXML('&lt;')).toBe('<');
+  expect(decodeXML('&amp;&apos;&gt;&lt;&quot;')).toBe('&\'><"');
 });
 
 test('ignores unknown named entities', () => {

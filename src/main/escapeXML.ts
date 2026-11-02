@@ -8,6 +8,9 @@ export function escapeXML(input: string): string {
   let output = '';
   let textIndex = 0;
 
+  // A call that threw midway doesn't reset lastIndex, and the search would skip the start of the input
+  escapedCharRegExp.lastIndex = 0;
+
   while (escapedCharRegExp.test(input)) {
     const lastIndex = escapedCharRegExp.lastIndex;
     const startIndex = lastIndex - 1;

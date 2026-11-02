@@ -16,3 +16,18 @@ test('encodes entities surrounded by text', () => {
 test('does not encode surrogate pairs', () => {
   expect(escapeXML('\uD83D\uDE18\u2764\uFE0F')).toBe('\uD83D\uDE18\u2764\uFE0F');
 });
+
+test('escapes the whole input after the previous call threw', () => {
+  const inputMock = {
+    toString() {
+      return '<';
+    },
+    charCodeAt() {
+      throw new Error('expected');
+    },
+  };
+
+  // @ts-expect-error The input isn't a string
+  expect(() => escapeXML(inputMock)).toThrow('expected');
+  expect(escapeXML('<')).toBe('&lt;');
+});

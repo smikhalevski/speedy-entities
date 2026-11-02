@@ -17,7 +17,22 @@ test('encodes surrogate pairs', () => {
   expect(encodeXML('\uD83D\uDE18\u2764\uFE0F')).toBe('&#x1f618;&#x2764;&#xfe0f;');
 });
 
-test('encodes lone surrogates', () => {
-  expect(encodeXML('\uD83Daaa')).toBe('&#xd83d;aaa');
-  expect(encodeXML('\uD83D')).toBe('&#xd83d;');
+test('replaces lone surrogates with a replacement character', () => {
+  expect(encodeXML('\uD800aaa')).toBe('&#xfffd;aaa');
+  expect(encodeXML('\uDFFF')).toBe('&#xfffd;');
+});
+
+test('encodes the whole input after the previous call threw', () => {
+  const inputMock = {
+    toString() {
+      return '<';
+    },
+    codePointAt() {
+      throw new Error('expected');
+    },
+  };
+
+  // @ts-expect-error The input isn't a string
+  expect(() => encodeXML(inputMock)).toThrow('expected');
+  expect(encodeXML('<')).toBe('&lt;');
 });

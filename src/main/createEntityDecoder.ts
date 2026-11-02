@@ -4,8 +4,9 @@
 export interface EntityDecoderOptions {
   /**
    * Mapping from an [character entity reference](https://www.w3.org/TR/html4/charset.html#h-5.3.2) to its decoded value.
-   * Entity references should contain only [a-zA-Z0-9] and may optionally start with an ampersand "&" and end with
-   * a semicolon ";". An error is thrown if an entity reference is invalid.
+   * Entity references may contain the ASCII chars that XML allows in names: letters, digits, "-", ".", ":" and "_".
+   * They may optionally start with an ampersand "&" and end with a semicolon ";". An error is thrown if an entity
+   * reference is invalid.
    *
    * ```json
    * {
@@ -33,6 +34,15 @@ export interface EntityDecoderOptions {
    * @default true
    */
   areC1ControlsRemapped?: boolean;
+
+  /**
+   * If `true` then a named character reference that isn't terminated with a semicolon isn't decoded if it's followed
+   * by "=" or an ASCII alphanumeric char, [as HTML does in attribute values](https://html.spec.whatwg.org/multipage/parsing.html#named-character-reference-state).
+   * This keeps URL query parameters intact, for example "?a=1&copy=2" isn't decoded as "?a=1\u00A9=2".
+   *
+   * @default false
+   */
+  isAttributeValue?: boolean;
 }
 
 /**
@@ -42,9 +52,26 @@ export interface EntityDecoderOptions {
  * @returns A function that decodes entities in the string.
  */
 export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
-  const { entities = {}, isNumericReferenceSemicolonRequired = false, areC1ControlsRemapped = true } = options;
+  const { entities = {} } = options;
 
-  const { edgeKeys, edgeNodes, nodeValues, slotMask, slotShift } = createEntityTrie(entities);
+  return createEntityTrieDecoder(createEntityTrie(entities), options);
+}
+
+/**
+ * Same as {@linkcode createEntityDecoder}, but uses a prebuilt trie, so decoders that differ only in options can share
+ * a trie instead of building their own.
+ */
+export function createEntityTrieDecoder(
+  entityTrie: ReturnType<typeof createEntityTrie>,
+  options: Omit<EntityDecoderOptions, 'entities'>
+): (input: string) => string {
+  const {
+    isNumericReferenceSemicolonRequired = false,
+    areC1ControlsRemapped = true,
+    isAttributeValue = false,
+  } = options;
+
+  const { edgeKeys, edgeNodes, nodeValues, slotMask, slotShift } = entityTrie;
 
   return input => {
     let output = '';
@@ -167,6 +194,20 @@ export function createEntityDecoder(options: EntityDecoderOptions = {}): (input:
             endIndex = index;
           }
         }
+
+        if (
+          isAttributeValue &&
+          value !== undefined &&
+          endIndex < inputLength &&
+          input.charCodeAt(endIndex - 1) !== /* ; */ 59
+        ) {
+          const charCode = input.charCodeAt(endIndex);
+
+          // An unterminated reference followed by "=" or an alphanumeric char is likely a URL query parameter
+          if (charCode === /* = */ 61 || isAlphanumericCharCode(charCode)) {
+            value = undefined;
+          }
+        }
       }
 
       // Concat decoded entity and preceding substring
@@ -244,7 +285,7 @@ function getEdgeKey(node: number, charCode: number): number {
  *
  * @see https://softwareengineering.stackexchange.com/questions/402542
  */
-function createEntityTrie(entities: Record<string, string>) {
+export function createEntityTrie(entities: Record<string, string>) {
   const edgeMap = new Map<number, number>();
   const nodeValues: Array<string | undefined> = [undefined];
 
@@ -312,6 +353,16 @@ function createEntityTrie(entities: Record<string, string>) {
 }
 
 function isEntityNameCharCode(charCode: number): boolean {
+  return (
+    isAlphanumericCharCode(charCode) ||
+    charCode === /* - */ 45 ||
+    charCode === /* . */ 46 ||
+    charCode === /* : */ 58 ||
+    charCode === /* _ */ 95
+  );
+}
+
+function isAlphanumericCharCode(charCode: number): boolean {
   return (
     (charCode >= /* a */ 97 && charCode <= /* z */ 122) ||
     (charCode >= /* A */ 65 && charCode <= /* Z */ 90) ||

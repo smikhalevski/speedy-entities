@@ -9,10 +9,10 @@ npm install --save-prod speedy-entities
 
 # Decode
 
-There are two preconfigured decoders: `decodeXML` and `decodeHTML`.
+There are three preconfigured decoders: `decodeXML`, `decodeHTML` and `decodeHTMLAttribute`.
 
 ```ts
-import { decodeXML, decodeHTML } from 'speedy-entities';
+import { decodeXML, decodeHTML, decodeHTMLAttribute } from 'speedy-entities';
 
 decodeXML('&#X61;&#98;&lt');
 // ⮕ 'ab&lt'
@@ -22,6 +22,10 @@ decodeHTML('&ltfoo&AElig');
 
 decodeHTML('&NotNestedGreaterGreater;&CounterClockwiseContourIntegral;');
 // ⮕ '\u2aa2\u0338\u2233'
+
+// Like browsers, preserves unterminated entities followed by "=" or an alphanumeric char
+decodeHTMLAttribute('/search?a=1&copy=2&reg');
+// ⮕ '/search?a=1&copy=2\u00ae'
 ```
 
 ## Custom decoder

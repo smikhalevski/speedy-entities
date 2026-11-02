@@ -8,17 +8,21 @@ export function encodeXML(input: string): string {
   let output = '';
   let textIndex = 0;
 
+  // A call that threw midway doesn't reset lastIndex, and the search would skip the start of the input
+  encodedCharRegExp.lastIndex = 0;
+
   while (encodedCharRegExp.test(input)) {
     let lastIndex = encodedCharRegExp.lastIndex;
 
     const startIndex = lastIndex - 1;
-
-    // Lone surrogates are encoded as is
     const codePoint = input.codePointAt(startIndex)!;
 
     let entity;
 
-    if (codePoint >= 0x80) {
+    if (codePoint >= 0xd800 && codePoint <= 0xdfff) {
+      // A lone surrogate isn't an XML char, so XML parsers reject a document that references it
+      entity = '&#xfffd;';
+    } else if (codePoint >= 0x80) {
       if (codePoint > 0xffff) {
         // Skip the low surrogate
         encodedCharRegExp.lastIndex = ++lastIndex;

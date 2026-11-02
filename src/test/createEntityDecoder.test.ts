@@ -12,6 +12,19 @@ test('supports named entities', () => {
   expect(decode('&Acy')).toBe('&Acy');
 });
 
+test('supports named entities that contain "-", ".", ":" and "_"', () => {
+  const decode = createEntityDecoder({ entities: { 'a-b.c:d_e;': 'aaa' } });
+
+  expect(decode('&a-b.c:d_e;')).toBe('aaa');
+});
+
+test('does not match non-ASCII chars against entity names', () => {
+  const decode = createEntityDecoder({ entities: { aaa: 'bbb' } });
+
+  // "\u00E1" is 225, which is also the edge key of the second "a" in the trie: (1 << 7) | 97
+  expect(decode('&\u00E1a')).toBe('&\u00E1a');
+});
+
 test('throws if an entity reference is invalid', () => {
   expect(() => createEntityDecoder({ entities: { 'aaa;bbb': 'ccc' } })).toThrow('Invalid entity reference: aaa;bbb');
 });
@@ -66,12 +79,28 @@ test('remaps C1 controls to Windows-1252 characters by default', () => {
   const decode = createEntityDecoder();
 
   expect(decode('&#128;')).toBe('\u20AC');
+  expect(decode('&#159;')).toBe('\u0178');
+});
+
+test('preserves C1 controls that have no Windows-1252 counterpart', () => {
+  const decode = createEntityDecoder();
+
+  expect(decode('&#129;')).toBe('\u0081');
 });
 
 test('renders illegal code points as a replacement character', () => {
   const decode = createEntityDecoder();
 
   expect(decode('&#X11FFFF;')).toBe('\uFFFD');
+  expect(decode('&#0;')).toBe('\uFFFD');
+  expect(decode('&#xD800;')).toBe('\uFFFD');
+  expect(decode('&#xDFFF;')).toBe('\uFFFD');
+});
+
+test('decodes the largest code point', () => {
+  const decode = createEntityDecoder();
+
+  expect(decode('&#x10FFFF;')).toBe('\uDBFF\uDFFF');
 });
 
 test('renders code points that have more than 6 digits as a replacement character', () => {
@@ -89,4 +118,28 @@ test('preserves invalid entities as is', () => {
   expect(decode('&#X;')).toBe('&#X;');
   expect(decode('&# ;')).toBe('&# ;');
   expect(decode('&#Z;')).toBe('&#Z;');
+});
+
+test('does not decode unterminated named entities followed by "=" or an alphanumeric char in attribute values', () => {
+  const decode = createEntityDecoder({ entities: { aaa: 'bbb' }, isAttributeValue: true });
+
+  expect(decode('&aaa= &aaab &aaaB &aaa1')).toBe('&aaa= &aaab &aaaB &aaa1');
+});
+
+test('decodes unterminated named entities followed by other chars in attribute values', () => {
+  const decode = createEntityDecoder({ entities: { aaa: 'bbb' }, isAttributeValue: true });
+
+  expect(decode('&aaa-&aaa')).toBe('bbb-bbb');
+});
+
+test('decodes terminated named entities followed by "=" in attribute values', () => {
+  const decode = createEntityDecoder({ entities: { 'aaa;': 'bbb' }, isAttributeValue: true });
+
+  expect(decode('&aaa;=')).toBe('bbb=');
+});
+
+test('decodes numeric references followed by "=" in attribute values', () => {
+  const decode = createEntityDecoder({ isAttributeValue: true });
+
+  expect(decode('&#97=')).toBe('a=');
 });
