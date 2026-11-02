@@ -32,6 +32,17 @@ function makeMixedText(tokens, length) {
   return text;
 }
 
+/**
+ * Returns a sequential copy of a string.
+ *
+ * Strings built with `+=` or `repeat` are ropes. After a rope is first read, it either keeps an indirection that slows
+ * down every char read, or becomes a sequential string, depending on when GC runs. Copying every value makes each
+ * library read the same kind of string in every run.
+ */
+function toSequentialString(string) {
+  return JSON.parse(JSON.stringify(string));
+}
+
 // Common entities are listed several times, so they occur as often as in real HTML
 // prettier-ignore
 const htmlTextTokens = [
@@ -121,7 +132,7 @@ function describeImplementations(name, implementations, valueGroups) {
 
       describe(groupName, () => {
         if (isGroupMeasure) {
-          const groupValues = Object.values(values);
+          const groupValues = Object.values(values).map(toSequentialString);
 
           for (const libraryName of Object.keys(implementations)) {
             const implementation = implementations[libraryName];
@@ -138,7 +149,7 @@ function describeImplementations(name, implementations, valueGroups) {
         }
 
         for (const valueName of Object.keys(values)) {
-          const value = values[valueName];
+          const value = toSequentialString(values[valueName]);
 
           describe(valueName, () => {
             for (const libraryName of Object.keys(implementations)) {
