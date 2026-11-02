@@ -171,7 +171,7 @@ export function createEntityTrieDecoder(
             break;
           }
 
-          const edgeKey = getEdgeKey(node, charCode);
+          const edgeKey = (node << 7) | charCode;
 
           let slotIndex = Math.imul(edgeKey, GOLDEN_RATIO) >>> slotShift;
 
@@ -269,16 +269,16 @@ const MAX_LOAD_FACTOR = 0.6;
  */
 const GOLDEN_RATIO = 0x9e3779b9;
 
-// Char codes are ASCII, so they take the low 7 bits
-function getEdgeKey(node: number, charCode: number): number {
-  return (node << 7) | charCode;
-}
+/**
+ * An optional ampersand, a name made of the ASCII chars that XML allows in names, and an optional semicolon.
+ */
+const entityReferenceRegExp = /^&?[a-zA-Z0-9.:_-]+;?$/;
 
 /**
  * Builds a trie of entity names, where each name prefix is a node and node 0 is the root. The edge from a node to its
- * child is keyed by `(node << 7) | charCode`. Edges are stored in a hash table with
- * [linear probing](https://en.wikipedia.org/wiki/Linear_probing), where the first slot to probe is picked by
- * [Fibonacci hashing](https://en.wikipedia.org/wiki/Hash_function#Fibonacci_hashing) of the edge key.
+ * child is keyed by `(node << 7) | charCode`, char codes are ASCII, so they take the low 7 bits. Edges are stored in
+ * a hash table with [linear probing](https://en.wikipedia.org/wiki/Linear_probing), where the first slot to probe is
+ * picked by [Fibonacci hashing](https://en.wikipedia.org/wiki/Hash_function#Fibonacci_hashing) of the edge key.
  *
  * A lookup starts at the root and follows an edge for each char of the input. It stops when there's no edge for
  * the next char. The last visited node that has a value is the longest matching entity name.
@@ -286,48 +286,93 @@ function getEdgeKey(node: number, charCode: number): number {
  * @see https://softwareengineering.stackexchange.com/questions/402542
  */
 export function createEntityTrie(entities: Record<string, string>) {
-  const edgeMap = new Map<number, number>();
-  const nodeValues: Array<string | undefined> = [undefined];
+  const entityReferences = Object.keys(entities);
 
-  for (const entity of Object.keys(entities)) {
-    // Skip the leading ampersand
-    const startIndex = entity.charCodeAt(0) === /* & */ 38 ? 1 : 0;
+  // Entity tables are usually sorted, so references are sorted only if they aren't
+  return (
+    buildEntityTrie(entities, entityReferences) ??
+    buildEntityTrie(entities, entityReferences.sort(compareEntityReferences))!
+  );
+}
 
-    // Semicolon is optional, but if present must be the last char
-    const endIndex = entity.charCodeAt(entity.length - 1) === /* ; */ 59 ? entity.length - 1 : entity.length;
+/**
+ * Builds a trie from entity references sorted by name, or returns `undefined` if they aren't sorted.
+ *
+ * In sorted order, the only nodes that a name shares with preceding names are the nodes of the prefix it shares with
+ * the previous name, and the rest of its nodes are new. So nodes are added without looking up edges, and edges are
+ * inserted into a hash table once its size is known.
+ */
+function buildEntityTrie(entities: Record<string, string>, entityReferences: string[]) {
+  let charCount = 0;
 
-    if (startIndex >= endIndex) {
-      throw new Error('Invalid entity reference: ' + entity);
-    }
-
-    let node = 0;
-
-    for (let index = startIndex; index < entity.length; ++index) {
-      const charCode = entity.charCodeAt(index);
-
-      if (index < endIndex && !isEntityNameCharCode(charCode)) {
-        throw new Error('Invalid entity reference: ' + entity);
-      }
-
-      const edgeKey = getEdgeKey(node, charCode);
-
-      let childNode = edgeMap.get(edgeKey);
-
-      if (childNode === undefined) {
-        childNode = nodeValues.push(undefined) - 1;
-        edgeMap.set(edgeKey, childNode);
-      }
-
-      node = childNode;
-    }
-
-    // "&lt;" and "lt;" have the same node, so the latter overwrites the former
-    nodeValues[node] = entities[entity];
+  for (const entityReference of entityReferences) {
+    charCount += entityReference.length;
   }
+
+  // The key of the edge that leads to a node, each char adds at most one node
+  const incomingEdgeKeys = new Int32Array(charCount + 1);
+
+  // The node of each entity reference
+  const referenceNodes = new Int32Array(entityReferences.length);
+
+  // The nodes of the previous name prefixes, indexed by prefix length
+  const pathNodes = [0];
+
+  let nodeCount = 1;
+  let previousName = '';
+
+  for (let referenceIndex = 0; referenceIndex < entityReferences.length; ++referenceIndex) {
+    const entityReference = entityReferences[referenceIndex];
+
+    if (!entityReferenceRegExp.test(entityReference)) {
+      throw new Error('Invalid entity reference: ' + entityReference);
+    }
+
+    const name = getEntityName(entityReference);
+    const nameLength = name.length;
+    const previousNameLength = previousName.length;
+
+    // The length of the prefix shared with the previous name
+    let depth = 0;
+
+    while (
+      depth < nameLength &&
+      depth < previousNameLength &&
+      name.charCodeAt(depth) === previousName.charCodeAt(depth)
+    ) {
+      ++depth;
+    }
+
+    if (
+      depth < previousNameLength &&
+      (depth === nameLength || name.charCodeAt(depth) < previousName.charCodeAt(depth))
+    ) {
+      // The name goes before the previous name
+      return undefined;
+    }
+
+    for (; depth < nameLength; ++depth) {
+      incomingEdgeKeys[nodeCount] = (pathNodes[depth] << 7) | name.charCodeAt(depth);
+      pathNodes[depth + 1] = nodeCount++;
+    }
+
+    referenceNodes[referenceIndex] = pathNodes[nameLength];
+    previousName = name;
+  }
+
+  const nodeValues = new Array<string | undefined>(nodeCount).fill(undefined);
+
+  for (let referenceIndex = 0; referenceIndex < entityReferences.length; ++referenceIndex) {
+    // "&lt;" and "lt;" have the same node, so the latter overwrites the former
+    nodeValues[referenceNodes[referenceIndex]] = entities[entityReferences[referenceIndex]];
+  }
+
+  // Each node except the root has an incoming edge
+  const edgeCount = nodeCount - 1;
 
   let tableSize = 16;
 
-  while (tableSize * MAX_LOAD_FACTOR < edgeMap.size) {
+  while (tableSize * MAX_LOAD_FACTOR < edgeCount) {
     tableSize <<= 1;
   }
 
@@ -338,7 +383,9 @@ export function createEntityTrie(entities: Record<string, string>) {
   const edgeKeys = new Int32Array(tableSize).fill(-1);
   const edgeNodes = new Int32Array(tableSize);
 
-  for (const [edgeKey, node] of edgeMap) {
+  for (let node = 1; node < nodeCount; ++node) {
+    const edgeKey = incomingEdgeKeys[node];
+
     let slotIndex = Math.imul(edgeKey, GOLDEN_RATIO) >>> slotShift;
 
     while (edgeKeys[slotIndex] !== -1) {
@@ -352,14 +399,17 @@ export function createEntityTrie(entities: Record<string, string>) {
   return { edgeKeys, edgeNodes, nodeValues, slotMask, slotShift };
 }
 
-function isEntityNameCharCode(charCode: number): boolean {
-  return (
-    isAlphanumericCharCode(charCode) ||
-    charCode === /* - */ 45 ||
-    charCode === /* . */ 46 ||
-    charCode === /* : */ 58 ||
-    charCode === /* _ */ 95
-  );
+// Sort is stable, so "&lt;" and "lt;" keep their order
+function compareEntityReferences(a: string, b: string): number {
+  const aName = getEntityName(a);
+  const bName = getEntityName(b);
+
+  return aName < bName ? -1 : aName > bName ? 1 : 0;
+}
+
+function getEntityName(entityReference: string): string {
+  // Skip the leading ampersand
+  return entityReference.charCodeAt(0) === /* & */ 38 ? entityReference.slice(1) : entityReference;
 }
 
 function isAlphanumericCharCode(charCode: number): boolean {

@@ -18,6 +18,24 @@ test('supports named entities that contain "-", ".", ":" and "_"', () => {
   expect(decode('&a-b.c:d_e;')).toBe('aaa');
 });
 
+test('supports named entities that are not sorted', () => {
+  const decode = createEntityDecoder({ entities: { 'a;': 'aaa', 'b;': 'bbb', '&ab;': 'ccc' } });
+
+  expect(decode('&a;&ab;&b;')).toBe('aaacccbbb');
+});
+
+test('supports named entities that are listed before their prefixes', () => {
+  const decode = createEntityDecoder({ entities: { ab: 'aaa', a: 'bbb', 'ab;': 'ccc' } });
+
+  expect(decode('&a &ab &ab;')).toBe('bbb aaa ccc');
+});
+
+test('uses the last value of named entities that have the same name', () => {
+  const decode = createEntityDecoder({ entities: { '&aaa;': 'bbb', 'aaa;': 'ccc' } });
+
+  expect(decode('&aaa;')).toBe('ccc');
+});
+
 test('does not match non-ASCII chars against entity names', () => {
   const decode = createEntityDecoder({ entities: { aaa: 'bbb' } });
 
