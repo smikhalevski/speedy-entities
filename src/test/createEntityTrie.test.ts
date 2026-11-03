@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
-import { createEntityTrie, createEntityTrieDecoder } from '../main/createEntityDecoder.js';
+import { createEntityTrie } from '../main/createEntityDecoder.js';
+import { createEntityTrieDecoder } from '../main/createEntityTrieDecoder.js';
 
 test('keeps the child of any ASCII char in bounds', () => {
   // A long chain after the last node with several children
