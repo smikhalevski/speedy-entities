@@ -6,7 +6,7 @@ import htmlEntities from './html-entities.js';
 const htmlEntityTrie = createEntityTrie(htmlEntities);
 
 /**
- * Decodes all known HTML entities and numeric character references in the input.
+ * Decodes HTML entities and numeric references in text.
  */
 export const decodeHTML = createEntityTrieDecoder(htmlEntityTrie, {
   isNumericReferenceSemicolonRequired: false,
@@ -14,8 +14,8 @@ export const decodeHTML = createEntityTrieDecoder(htmlEntityTrie, {
 });
 
 /**
- * Same as {@linkcode decodeHTML}, but decodes an HTML attribute value, where an unterminated named entity followed by
- * "=" or an ASCII alphanumeric char isn't decoded. For example, "?a=1&copy=2" is preserved as is.
+ * Same as {@linkcode decodeHTML}, but for attribute values: like browsers, it doesn't decode a named reference without
+ * ";" if "=" or an ASCII letter or digit follows it, so "?a=1&copy=2" stays intact.
  */
 export const decodeHTMLAttribute = createEntityTrieDecoder(htmlEntityTrie, {
   isNumericReferenceSemicolonRequired: false,

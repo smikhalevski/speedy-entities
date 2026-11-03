@@ -10,8 +10,8 @@ for (const char of '"&\'<>') {
 }
 
 /**
- * Numeric character references for U+0080 to U+07FF, the letters of Latin, Greek, Cyrillic, Hebrew and Arabic, among
- * others. Text in these scripts reuses a few dozen of them, so they are formatted in advance.
+ * References for U+0080 to U+07FF, formatted in advance, since text in Latin, Greek, Cyrillic, Hebrew or Arabic script
+ * reuses a few dozen of them.
  */
 const numericReferences: string[] = [];
 
@@ -22,8 +22,8 @@ for (let codePoint = 0x80; codePoint < 0x800; ++codePoint) {
 const hexDigitCharCodes = Uint8Array.from('0123456789abcdef', char => char.charCodeAt(0));
 
 /**
- * Same as {@linkcode escapeXML}, but also encodes non-ASCII characters as numeric character references, so the output
- * is ASCII-only and safe for any document encoding.
+ * Same as {@linkcode escapeXML}, but also encodes non-ASCII chars as numeric references, so the output is ASCII and
+ * safe for any document encoding. A lone surrogate is encoded as `&#xfffd;`.
  */
 export function encodeXML(input: string): string {
   const inputLength = input.length;
@@ -71,7 +71,8 @@ export function encodeXML(input: string): string {
         entity = getNumericReference(codePoint);
         nextIndex = index + 2;
       } else {
-        // A lone surrogate isn't an XML char, so XML parsers reject a document that references it
+        // A lone surrogate isn't a Unicode scalar value, so HTML parsers, decodeHTML and decodeXML decode a reference
+        // to it as U+FFFD anyway
         entity = '&#xfffd;';
       }
     } else if (charCode >= 0x80) {
@@ -110,8 +111,8 @@ function getNumericReference(codePoint: number): string {
 }
 
 /**
- * Returns "&#x", the hex digits of the code point without leading zeros, and ";". Building the string from char codes
- * in one call is about twice as fast as toString(16) and concatenation. The code point must be at least 0x100.
+ * Formats a reference like "&#x1f600;". Building it from char codes in one call is about twice as fast as toString(16)
+ * and concatenation. The code point must be at least 0x100.
  */
 function formatNumericReference(codePoint: number): string {
   if (codePoint < 0x1000) {

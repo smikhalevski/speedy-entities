@@ -56,9 +56,77 @@ decode('&#X61;&#x62;&#x63;');
 // ⮕ 'abc'
 ```
 
+`createEntityDecoder` accepts these options:
+
+<dl>
+<dt><code>entities</code></dt>
+<dd>
+
+Entity references mapped to their values. A reference is an optional `&`, a name of ASCII letters, digits and `-.:_`,
+and an optional `;`. If a reference has the `;`, the input needs it too.
+
+`createEntityDecoder` throws an error if a reference doesn't match this format.
+
+Defaults to `{}`.
+
+</dd>
+<dt><code>isNumericReferenceSemicolonRequired</code></dt>
+<dd>
+
+If `true`, numeric references are decoded only if they end with `;`, as XML requires.
+
+Defaults to `false`.
+
+</dd>
+<dt><code>areC1ControlsRemapped</code></dt>
+<dd>
+
+If `true`, `&#128;` to `&#159;` are decoded as Windows-1252 characters, as HTML does. For example, `&#128;` is decoded
+as `€`.
+
+Defaults to `true`.
+
+</dd>
+<dt><code>isAttributeValue</code></dt>
+<dd>
+
+If `true`, a named reference without `;` that is followed by `=` or an ASCII letter or digit isn't decoded, as HTML
+does in attribute values.
+
+Defaults to `false`.
+
+</dd>
+</dl>
+
+## Sharing a trie
+
+`createEntityDecoder` builds a trie of entity names on every call. To create several decoders for the same entities,
+build the trie once with `createEntityTrie` and pass it to `createEntityTrieDecoder`, which accepts the same options
+except `entities`. This is how `decodeHTML` and `decodeHTMLAttribute` share one trie of HTML entities.
+
+```ts
+import { createEntityTrie, createEntityTrieDecoder } from 'speedy-entities';
+
+const entityTrie = createEntityTrie({
+  '&foo;': 'okay',
+  '&qux': 'yeah',
+});
+
+const decodeText = createEntityTrieDecoder(entityTrie);
+
+const decodeAttribute = createEntityTrieDecoder(entityTrie, { isAttributeValue: true });
+
+decodeText('&foo;&qux=1');
+// ⮕ 'okayyeah=1'
+
+decodeAttribute('&foo;&qux=1');
+// ⮕ 'okay&qux=1'
+```
+
 # Encode
 
-`encodeXML` encodes non-ASCII characters as named XML entities or as numeric references.
+`encodeXML` replaces `"&'<>` with XML entities and non-ASCII characters with numeric character references, so the
+output is ASCII-only. A lone surrogate is encoded as `&#xfffd;`.
 
 `escapeXML` escapes only `"&'<>` characters.
 
@@ -69,7 +137,7 @@ encodeXML('&😘❤️');
 // ⮕ '&amp;&#x1f618;&#x2764;&#xfe0f;'
 
 escapeXML('&😘❤️');
-// ⮕ '&amp;😘❤'
+// ⮕ '&amp;😘❤️'
 ```
 
 # Performance
@@ -91,4 +159,11 @@ To reproduce [the performance test suite](src/test/perf.ts) results, clone this 
 npm ci
 npm run build
 npm run perf
+```
+
+By default, each input is measured in a separate test. Set `GROUP_MEASURE=1` to measure each group of inputs in one
+test, and pass a name pattern to run some of the tests:
+
+```shell
+GROUP_MEASURE=1 npm run perf -- 'decodeHTML.*'
 ```

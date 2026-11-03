@@ -1,8 +1,8 @@
 const escapedCharRegExp = /["&'<>]/g;
 
 /**
- * Replaces `"&'<>` with XML entities. Non-ASCII characters are preserved, so the output must be stored in a Unicode
- * encoding. Use {@linkcode encodeXML} to get an ASCII-only output.
+ * Replaces `"&'<>` with XML entities and keeps other chars, so the output needs a Unicode encoding. Use
+ * {@linkcode encodeXML} for ASCII output.
  */
 export function escapeXML(input: string): string {
   let output = '';
@@ -30,7 +30,11 @@ export function escapeXML(input: string): string {
       entity = '&gt;';
     }
 
-    output += textIndex === startIndex ? entity : input.slice(textIndex, startIndex) + entity;
+    if (textIndex !== startIndex) {
+      output += input.slice(textIndex, startIndex);
+    }
+    output += entity;
+
     textIndex = lastIndex;
   }
 

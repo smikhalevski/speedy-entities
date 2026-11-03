@@ -1,49 +1,20 @@
 import { describe, measure, test } from 'toofast';
-import * as lib from '../../lib/index.js';
 import * as entities from 'entities';
-import * as htmlEntities from 'html-entities';
 import * as he from 'he';
+import * as htmlEntities from 'html-entities';
+import * as speedyEntities from '../../lib/index.js';
 
-declare const process: any;
+// Node.js types aren't loaded by tsconfig.json
+declare const process: { env: Record<string, string | undefined> };
 
 /**
- * If `true` then each measured operation processes all values of a group, so each value is weighted by its actual
- * cost. Otherwise, each value is measured in a separate test.
- *
- * Calling `measure` once per value in the same test doesn't work: toofast merges samples of all measures, and fast
- * values collect far more samples, so they dominate the result.
+ * If `true`, each test measures all inputs of a group, so each input counts in proportion to its cost. Otherwise, each
+ * input gets its own test, since toofast merges the samples of all measures in a test.
  */
-const isGroupMeasure = process.env.GROUP_MEASURE === '1';
+const areInputsGrouped = process.env.GROUP_MEASURE === '1';
 
 const REPEAT_COUNT = 200;
 const MIXED_TEXT_LENGTH = 10_000;
-
-/**
- * Concatenates tokens in a fixed pseudo-random order until the text reaches the length. Unlike a repeated pattern,
- * the result has no short period, so branch prediction can't memorize it.
- */
-function makeMixedText(tokens: string[], length: number): string {
-  let text = '';
-  let seed = 1;
-
-  while (text.length < length) {
-    // Linear congruential generator, high bits are more random than low bits
-    seed = (Math.imul(seed, 1_103_515_245) + 12_345) >>> 0;
-    text += tokens[(seed >>> 16) % tokens.length];
-  }
-  return text;
-}
-
-/**
- * Returns a sequential copy of a string.
- *
- * Strings built with `+=` or `repeat` are ropes. After a rope is first read, it either keeps an indirection that slows
- * down every char read, or becomes a sequential string, depending on when GC runs. Copying every value makes each
- * library read the same kind of string in every run.
- */
-function toSequentialString(str: string): string {
-  return JSON.parse(JSON.stringify(str));
-}
 
 // Common entities are listed several times, so they occur as often as in real HTML
 // prettier-ignore
@@ -61,7 +32,7 @@ const escapedCodeTokens = [
 
 const numericTokens = ['&#169;', '&#x2014;', '&#8217;', '&#39;', '&#x27;', '&#x1F600;', '&#128;', '&#160;', ' '];
 
-const valuesToDecode = {
+const decodeInputs = {
   // Measure per-call overhead, which dominates when a parser decodes each text node and attribute separately
   short: {
     empty: '',
@@ -99,7 +70,7 @@ const valuesToDecode = {
   },
 };
 
-const valuesToEncode = {
+const encodeInputs = {
   short: {
     empty: '',
     text: 'Tom & Jerry',
@@ -117,56 +88,62 @@ const valuesToEncode = {
   },
 };
 
+// Created once, so measured calls don't allocate them
 const htmlEntitiesDecodeHTMLOptions: htmlEntities.DecodeOptions = { level: 'html5', scope: 'body' };
 const htmlEntitiesDecodeXMLOptions: htmlEntities.DecodeOptions = { level: 'xml', scope: 'strict' };
 const htmlEntitiesEncodeXMLOptions: htmlEntities.EncodeOptions = { level: 'xml', mode: 'nonAscii' };
 const htmlEntitiesEscapeXMLOptions: htmlEntities.EncodeOptions = { level: 'xml', mode: 'specialChars' };
 
+describeFunction('decodeHTML', decodeInputs, {
+  'speedy-entities': speedyEntities.decodeHTML,
+  entities: entities.decodeHTML,
+  'html-entities': input => htmlEntities.decode(input, htmlEntitiesDecodeHTMLOptions),
+  he: he.decode,
+});
+
+describeFunction('decodeXML', decodeInputs, {
+  'speedy-entities': speedyEntities.decodeXML,
+  entities: entities.decodeXML,
+  'html-entities': input => htmlEntities.decode(input, htmlEntitiesDecodeXMLOptions),
+  he: he.decode,
+});
+
+describeFunction('encodeXML', encodeInputs, {
+  'speedy-entities': speedyEntities.encodeXML,
+  entities: entities.encodeXML,
+  'html-entities': input => htmlEntities.encode(input, htmlEntitiesEncodeXMLOptions),
+  he: he.encode,
+});
+
+describeFunction('escapeXML', encodeInputs, {
+  'speedy-entities': speedyEntities.escapeXML,
+  entities: entities.escapeUTF8,
+  'html-entities': input => htmlEntities.encode(input, htmlEntitiesEscapeXMLOptions),
+  he: he.escape,
+});
+
+type Libraries = Record<string, (input: string) => string>;
+
 /**
- * Measures each implementation on each group of values.
- *
- * Each test runs in a separate process, so implementations don't affect each other's optimizations.
+ * Declares a test for each library and each input, or each group of inputs if {@linkcode areInputsGrouped}. Tests run
+ * in separate processes, so libraries don't affect each other's optimizations.
  */
-function describeImplementations(
-  name: string,
-  implementations: Record<string, (value: string) => string>,
-  valueGroups: Record<string, Record<string, string>>
+function describeFunction(
+  functionName: string,
+  inputGroups: Record<string, Record<string, string>>,
+  libraries: Libraries
 ) {
-  describe(name, () => {
-    for (const groupName of Object.keys(valueGroups)) {
-      const values = valueGroups[groupName];
-
+  describe(functionName, () => {
+    for (const [groupName, inputs] of Object.entries(inputGroups)) {
       describe(groupName, () => {
-        if (isGroupMeasure) {
-          const groupValues = Object.values(values).map(toSequentialString);
-
-          for (const libraryName of Object.keys(implementations)) {
-            const implementation = implementations[libraryName];
-
-            test(libraryName, () => {
-              measure(() => {
-                for (const value of groupValues) {
-                  implementation(value);
-                }
-              });
-            });
-          }
+        if (areInputsGrouped) {
+          testLibraries(libraries, Object.values(inputs));
           return;
         }
 
-        for (const valueName of Object.keys(values)) {
-          const value = toSequentialString(values[valueName]);
-
-          describe(valueName, () => {
-            for (const libraryName of Object.keys(implementations)) {
-              const implementation = implementations[libraryName];
-
-              test(libraryName, () => {
-                measure(() => {
-                  implementation(value);
-                });
-              });
-            }
+        for (const [inputName, input] of Object.entries(inputs)) {
+          describe(inputName, () => {
+            testLibraries(libraries, [input]);
           });
         }
       });
@@ -174,46 +151,50 @@ function describeImplementations(
   });
 }
 
-describeImplementations(
-  'decodeHTML',
-  {
-    'speedy-entities': value => lib.decodeHTML(value),
-    entities: value => entities.decodeHTML(value),
-    'html-entities': value => htmlEntities.decode(value, htmlEntitiesDecodeHTMLOptions),
-    he: value => he.decode(value),
-  },
-  valuesToDecode
-);
+function testLibraries(libraries: Libraries, inputs: string[]) {
+  const sequentialInputs = inputs.map(toSequentialString);
 
-describeImplementations(
-  'decodeXML',
-  {
-    'speedy-entities': value => lib.decodeXML(value),
-    entities: value => entities.decodeXML(value),
-    'html-entities': value => htmlEntities.decode(value, htmlEntitiesDecodeXMLOptions),
-    he: value => he.decode(value),
-  },
-  valuesToDecode
-);
+  for (const [libraryName, run] of Object.entries(libraries)) {
+    test(libraryName, () => {
+      if (sequentialInputs.length === 1) {
+        const [input] = sequentialInputs;
 
-describeImplementations(
-  'encodeXML',
-  {
-    'speedy-entities': value => lib.encodeXML(value),
-    entities: value => entities.encodeXML(value),
-    'html-entities': value => htmlEntities.encode(value, htmlEntitiesEncodeXMLOptions),
-    he: value => he.encode(value),
-  },
-  valuesToEncode
-);
+        // A loop would add to the time of short inputs
+        measure(() => {
+          run(input);
+        });
+        return;
+      }
 
-describeImplementations(
-  'escapeXML',
-  {
-    'speedy-entities': value => lib.escapeXML(value),
-    entities: value => entities.escapeUTF8(value),
-    'html-entities': value => htmlEntities.encode(value, htmlEntitiesEscapeXMLOptions),
-    he: value => he.escape(value),
-  },
-  valuesToEncode
-);
+      measure(() => {
+        for (const input of sequentialInputs) {
+          run(input);
+        }
+      });
+    });
+  }
+}
+
+/**
+ * Joins tokens in a fixed pseudo-random order until the text is long enough. Unlike a repeated pattern, branch
+ * prediction can't memorize it.
+ */
+function makeMixedText(tokens: string[], length: number) {
+  let text = '';
+  let seed = 1;
+
+  while (text.length < length) {
+    // Linear congruential generator, high bits are more random than low bits
+    seed = (Math.imul(seed, 1_103_515_245) + 12_345) >>> 0;
+    text += tokens[(seed >>> 16) % tokens.length];
+  }
+  return text;
+}
+
+/**
+ * Returns a flat copy of a string. Strings built with `+=` or `repeat` are ropes, and how fast a rope is read depends
+ * on when GC flattens it.
+ */
+function toSequentialString(str: string): string {
+  return JSON.parse(JSON.stringify(str));
+}

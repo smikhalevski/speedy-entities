@@ -3,35 +3,36 @@
  */
 export interface EntityTrie {
   /**
-   * The offset of the children of a node: the child for a char is at `nodeBases[node] + charCode`.
+   * The child of a node for a char is at `nodeBases[node] + charCode`.
    */
   nodeBases: Int32Array;
 
   /**
-   * The parent of a node shifted left by one bit, with the low bit set if an entity name ends at the node. -1 marks
-   * an unused node.
+   * `nodeChecks[node] >> 1` is the parent of a node, and the low bit is set if an entity name ends at the node. -1
+   * marks an unused index.
    */
   nodeChecks: Int32Array;
 
   /**
-   * The decoded value of a node, or `undefined` if no entity name ends at the node.
+   * The value of the entity name that ends at a node.
    */
   nodeValues: Array<string | undefined>;
 }
 
 /**
- * An optional ampersand, a name made of the ASCII chars that XML allows in names, and an optional semicolon.
+ * An optional "&", a name of ASCII letters, digits and "-.:_", and an optional ";".
  */
 const entityReferenceRegExp = /^&?[a-zA-Z0-9.:_-]+;?$/;
 
 /**
- * Builds a [double-array trie](https://en.wikipedia.org/wiki/Trie#Implementation_strategies) of entity names, where
- * each name prefix is a node and node 0 is the root. The child of a node for a char is at
- * `nodeBases[node] + charCode`, and it belongs to the node if `nodeChecks[child] >> 1` is the node. So a lookup step
- * is two array reads, with no hashing or probing.
+ * Builds a trie of entity names. Pass it to {@linkcode createEntityTrieDecoder} to create decoders that share it,
+ * since building a trie takes time and memory.
  *
- * A lookup starts at the root and follows a child for each char of the input. It stops when there's no child for
- * the next char. The last visited node where an entity name ends is the longest matching entity name.
+ * It's a [double-array trie](https://en.wikipedia.org/wiki/Trie#Implementation_strategies): finding the child of a
+ * node takes two array reads and no hashing.
+ *
+ * @param entities Entity references mapped to their values, see {@linkcode EntityDecoderOptions.entities}.
+ * @throws Error if an entity reference is invalid.
  */
 export function createEntityTrie(entities: Record<string, string>): EntityTrie {
   const entityReferences = Object.keys(entities);
@@ -44,12 +45,11 @@ export function createEntityTrie(entities: Record<string, string>): EntityTrie {
 }
 
 /**
- * Builds a trie from entity references sorted by name, or returns `undefined` if they aren't sorted.
+ * Builds a trie from references sorted by name, or returns `undefined` if they aren't sorted.
  *
- * In sorted order, the only nodes that a name shares with preceding names are the nodes of the prefix it shares with
- * the previous name, and the rest of its nodes are new. So nodes are numbered in preorder without looking anything
- * up, and the first child of a node is the next node. Then nodes are placed in the double array in the same order,
- * so a node is placed after its parent.
+ * In sorted order, the nodes that a name shares with earlier names are those of its common prefix with the previous
+ * name. So nodes are numbered in preorder without lookups, and the first child of a node is the next node. Nodes are
+ * placed in the same order, so a parent is placed before its children.
  */
 function buildEntityTrie(entities: Record<string, string>, entityReferences: string[]): EntityTrie | undefined {
   let charCount = 0;

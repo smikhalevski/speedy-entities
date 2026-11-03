@@ -1,13 +1,42 @@
-import type { createEntityDecoder, EntityDecoderOptions } from './createEntityDecoder.js';
-import type { EntityTrie } from './createEntityTrie.js';
+import type { createEntityTrie, EntityTrie } from './createEntityTrie.js';
 
 /**
- * Same as {@linkcode createEntityDecoder}, but uses a prebuilt trie, so decoders that differ only in options can share
- * a trie instead of building their own.
+ * Options of {@linkcode createEntityTrieDecoder}.
+ */
+export interface EntityTrieDecoderOptions {
+  /**
+   * If `true`, numeric references are decoded only if they end with ";", as XML requires.
+   *
+   * @default false
+   */
+  isNumericReferenceSemicolonRequired?: boolean;
+
+  /**
+   * If `true`, numeric references to C1 controls (U+0080 to U+009F) are decoded as Windows-1252 chars,
+   * [as HTML does](https://html.spec.whatwg.org/multipage/parsing.html#numeric-character-reference-end-state). For
+   * example, "&#128;" is decoded as the euro sign instead of U+0080.
+   *
+   * @default true
+   */
+  areC1ControlsRemapped?: boolean;
+
+  /**
+   * If `true`, a named reference without ";" isn't decoded if "=" or an ASCII letter or digit follows it,
+   * [as HTML does in attribute values](https://html.spec.whatwg.org/multipage/parsing.html#named-character-reference-state).
+   * This keeps URL query strings like "?a=1&copy=2" intact.
+   *
+   * @default false
+   */
+  isAttributeValue?: boolean;
+}
+
+/**
+ * Creates a decoder that uses a trie from {@linkcode createEntityTrie}, so decoders that differ only in options can
+ * share a trie.
  */
 export function createEntityTrieDecoder(
   entityTrie: EntityTrie,
-  options: Omit<EntityDecoderOptions, 'entities'>
+  options: EntityTrieDecoderOptions = {}
 ): (input: string) => string {
   const {
     isNumericReferenceSemicolonRequired = false,
@@ -171,11 +200,9 @@ export function createEntityTrieDecoder(
 }
 
 /**
- * Windows-1252 chars for the C1 control code points U+0080 to U+009F. Code points that have no Windows-1252
- * counterpart are preserved.
+ * Windows-1252 chars for U+0080 to U+009F. Code points that Windows-1252 leaves undefined map to themselves.
  *
- * Standing on the shoulders of giants
- * https://github.com/mathiasbynens/he/blob/master/data/decode-map-overrides.json
+ * @see https://github.com/mathiasbynens/he/blob/master/data/decode-map-overrides.json
  */
 // prettier-ignore
 const c1ControlValues = [
