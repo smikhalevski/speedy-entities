@@ -37,7 +37,9 @@ test('preserves a long run of plain chars', () => {
   expect(encodeXML('a'.repeat(30))).toBe('a'.repeat(30));
 });
 
-test('encodes different chars that share a cached reference slot', () => {
-  // U+00E9 and U+04E9 have the same low 10 bits
-  expect(encodeXML('\u00E9\u04E9\u00E9')).toBe('&#xe9;&#x4e9;&#xe9;');
+test('encodes chars at the boundaries of reference lengths', () => {
+  expect(encodeXML('\u07FF\u0800\u0FFF\u1000\uFFFF')).toBe('&#x7ff;&#x800;&#xfff;&#x1000;&#xffff;');
+  expect(encodeXML(String.fromCodePoint(0x10000, 0xfffff, 0x100000, 0x10ffff))).toBe(
+    '&#x10000;&#xfffff;&#x100000;&#x10ffff;'
+  );
 });

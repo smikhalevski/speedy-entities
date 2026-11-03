@@ -10,11 +10,16 @@ for (const char of '"&\'<>') {
 }
 
 /**
- * Recently formatted numeric character references, indexed by the low 10 bits of their code point. Text usually reuses
- * a small set of chars, so most references are taken from here instead of being formatted again.
+ * Numeric character references for U+0080 to U+07FF, the letters of Latin, Greek, Cyrillic, Hebrew and Arabic, among
+ * others. Text in these scripts reuses a few dozen of them, so they are formatted in advance.
  */
-const cachedCodePoints = new Int32Array(1024).fill(-1);
-const cachedReferences = new Array<string>(1024).fill('');
+const numericReferences: string[] = [];
+
+for (let codePoint = 0x80; codePoint < 0x800; ++codePoint) {
+  numericReferences.push('&#x' + codePoint.toString(16) + ';');
+}
+
+const hexDigitCharCodes = Uint8Array.from('0123456789abcdef', char => char.charCodeAt(0));
 
 /**
  * Same as {@linkcode escapeXML}, but also encodes non-ASCII characters as numeric character references, so the output
@@ -99,12 +104,70 @@ function isEncodedCharCode(charCode: number): boolean {
   return charCode >= 0x80 || encodedAsciiFlags[charCode] === 1;
 }
 
+// The code point must be at least 0x80
 function getNumericReference(codePoint: number): string {
-  const slot = codePoint & 1023;
+  return codePoint < 0x800 ? numericReferences[codePoint - 0x80] : formatNumericReference(codePoint);
+}
 
-  if (cachedCodePoints[slot] !== codePoint) {
-    cachedCodePoints[slot] = codePoint;
-    cachedReferences[slot] = '&#x' + codePoint.toString(16) + ';';
+/**
+ * Returns "&#x", the hex digits of the code point without leading zeros, and ";". Building the string from char codes
+ * in one call is about twice as fast as toString(16) and concatenation. The code point must be at least 0x100.
+ */
+function formatNumericReference(codePoint: number): string {
+  if (codePoint < 0x1000) {
+    return String.fromCharCode(
+      /* & */ 38,
+      /* # */ 35,
+      /* x */ 120,
+      getHexDigitCharCode(codePoint, 8),
+      getHexDigitCharCode(codePoint, 4),
+      getHexDigitCharCode(codePoint, 0),
+      /* ; */ 59
+    );
   }
-  return cachedReferences[slot];
+
+  if (codePoint < 0x10000) {
+    return String.fromCharCode(
+      /* & */ 38,
+      /* # */ 35,
+      /* x */ 120,
+      getHexDigitCharCode(codePoint, 12),
+      getHexDigitCharCode(codePoint, 8),
+      getHexDigitCharCode(codePoint, 4),
+      getHexDigitCharCode(codePoint, 0),
+      /* ; */ 59
+    );
+  }
+
+  if (codePoint < 0x100000) {
+    return String.fromCharCode(
+      /* & */ 38,
+      /* # */ 35,
+      /* x */ 120,
+      getHexDigitCharCode(codePoint, 16),
+      getHexDigitCharCode(codePoint, 12),
+      getHexDigitCharCode(codePoint, 8),
+      getHexDigitCharCode(codePoint, 4),
+      getHexDigitCharCode(codePoint, 0),
+      /* ; */ 59
+    );
+  }
+
+  return String.fromCharCode(
+    /* & */ 38,
+    /* # */ 35,
+    /* x */ 120,
+    getHexDigitCharCode(codePoint, 20),
+    getHexDigitCharCode(codePoint, 16),
+    getHexDigitCharCode(codePoint, 12),
+    getHexDigitCharCode(codePoint, 8),
+    getHexDigitCharCode(codePoint, 4),
+    getHexDigitCharCode(codePoint, 0),
+    /* ; */ 59
+  );
+}
+
+// The char code of the hex digit at the given bit offset
+function getHexDigitCharCode(codePoint: number, offset: number): number {
+  return hexDigitCharCodes[(codePoint >> offset) & 15];
 }
