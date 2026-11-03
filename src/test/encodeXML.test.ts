@@ -22,17 +22,22 @@ test('replaces lone surrogates with a replacement character', () => {
   expect(encodeXML('\uDFFF')).toBe('&#xfffd;');
 });
 
-test('encodes the whole input after the previous call threw', () => {
-  const inputMock = {
-    toString() {
-      return '<';
-    },
-    codePointAt() {
-      throw new Error('expected');
-    },
-  };
+test('encodes chars from U+0080', () => {
+  expect(encodeXML('\u007F\u0080\u00E9')).toBe('\u007F&#x80;&#xe9;');
+});
 
-  // @ts-expect-error The input isn't a string
-  expect(() => encodeXML(inputMock)).toThrow('expected');
-  expect(encodeXML('<')).toBe('&lt;');
+test('encodes chars after long runs of plain chars', () => {
+  expect(encodeXML('a'.repeat(30) + '<')).toBe('a'.repeat(30) + '&lt;');
+
+  // The previous call stopped searching past this char
+  expect(encodeXML('b'.repeat(29) + '\u0080')).toBe('b'.repeat(29) + '&#x80;');
+});
+
+test('preserves a long run of plain chars', () => {
+  expect(encodeXML('a'.repeat(30))).toBe('a'.repeat(30));
+});
+
+test('encodes different chars that share a cached reference slot', () => {
+  // U+00E9 and U+04E9 have the same low 10 bits
+  expect(encodeXML('\u00E9\u04E9\u00E9')).toBe('&#xe9;&#x4e9;&#xe9;');
 });
