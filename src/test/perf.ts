@@ -2,16 +2,21 @@ import { describe, measure, test } from 'toofast';
 import * as entities from 'entities';
 import * as he from 'he';
 import * as htmlEntities from 'html-entities';
+// @ts-ignore npm run docs must not require lib
 import * as speedyEntities from '../../lib/index.js';
 
 // Node.js types aren't loaded by tsconfig.json
-declare const process: { env: Record<string, string | undefined> };
+declare const process: { env: { GROUP_MEASURE?: '1' | '2' } };
 
 /**
- * If `true`, each test measures all inputs of a group, so each input counts in proportion to its cost. Otherwise, each
- * input gets its own test, since toofast merges the samples of all measures in a test.
+ * If `true`, each group of inputs gets one test per library. Set by GROUP_MEASURE=1.
  */
-const areInputsGrouped = process.env.GROUP_MEASURE === '1';
+const isTestPerGroup = process.env.GROUP_MEASURE === '1';
+
+/**
+ * If `true`, each function gets one test per library. Set by GROUP_MEASURE=2.
+ */
+const isTestPerFunction = process.env.GROUP_MEASURE === '2';
 
 const REPEAT_COUNT = 200;
 const MIXED_TEXT_LENGTH = 10_000;
@@ -125,8 +130,8 @@ describeFunction('escapeXML', encodeInputs, {
 type Libraries = Record<string, (input: string) => string>;
 
 /**
- * Declares a test for each library and each input, or each group of inputs if {@linkcode areInputsGrouped}. Tests run
- * in separate processes, so libraries don't affect each other's optimizations.
+ * Declares a test for each library and each input, or fewer tests if {@linkcode isTestPerGroup} or
+ * {@linkcode isTestPerFunction}. Tests run in separate processes, so libraries don't affect each other's optimizations.
  */
 function describeFunction(
   functionName: string,
@@ -134,9 +139,16 @@ function describeFunction(
   libraries: Libraries
 ) {
   describe(functionName, () => {
+    if (isTestPerFunction) {
+      const allInputs = Object.values(inputGroups).flatMap(inputs => Object.values(inputs));
+
+      testLibraries(libraries, allInputs);
+      return;
+    }
+
     for (const [groupName, inputs] of Object.entries(inputGroups)) {
       describe(groupName, () => {
-        if (areInputsGrouped) {
+        if (isTestPerGroup) {
           testLibraries(libraries, Object.values(inputs));
           return;
         }
@@ -151,26 +163,20 @@ function describeFunction(
   });
 }
 
+/**
+ * Declares a test for each library, with a measure for each input. toofast averages the call durations of all measures
+ * in a test, so slow inputs weigh more, and the margin of error includes the spread between inputs.
+ */
 function testLibraries(libraries: Libraries, inputs: string[]) {
   const sequentialInputs = inputs.map(toSequentialString);
 
   for (const [libraryName, run] of Object.entries(libraries)) {
     test(libraryName, () => {
-      if (sequentialInputs.length === 1) {
-        const [input] = sequentialInputs;
-
-        // A loop would add to the time of short inputs
+      for (const input of sequentialInputs) {
         measure(() => {
           run(input);
         });
-        return;
       }
-
-      measure(() => {
-        for (const input of sequentialInputs) {
-          run(input);
-        }
-      });
     });
   }
 }

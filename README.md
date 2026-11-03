@@ -158,11 +158,37 @@ To reproduce [the performance test suite](src/test/perf.ts) results, clone this 
 ```shell
 npm ci
 npm run build
-npm run perf
+GROUP_MEASURE=2 npm run perf
 ```
 
-By default, each input is measured in a separate test. Set `GROUP_MEASURE=1` to measure each group of inputs in one
-test, and pass a name pattern to run some of the tests:
+The inputs of each function are split into groups, such as short and long inputs. `GROUP_MEASURE` sets what a test
+covers:
+
+<dl>
+<dt>Unset</dt>
+<dd>
+
+Each input is one test per library.
+
+</dd>
+<dt><code>GROUP_MEASURE=1</code></dt>
+<dd>
+
+Each group of inputs is one test per library.
+
+</dd>
+<dt><code>GROUP_MEASURE=2</code></dt>
+<dd>
+
+Each function is one test per library.
+
+</dd>
+</dl>
+
+A grouped test measures each of its inputs separately and combines the results, so its margin of error includes the
+spread between inputs.
+
+Pass a name pattern to run some of the tests:
 
 ```shell
 GROUP_MEASURE=1 npm run perf -- 'decodeHTML.*'
