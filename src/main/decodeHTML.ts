@@ -1,4 +1,4 @@
-import { createEntityTrie } from './createEntityDecoder.js';
+import { createEntityTrie } from './createEntityTrie.js';
 import { createEntityTrieDecoder } from './createEntityTrieDecoder.js';
 import htmlEntities from './html-entities.js';
 

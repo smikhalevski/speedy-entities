@@ -1,4 +1,5 @@
-import type { createEntityDecoder, EntityDecoderOptions, EntityTrie } from './createEntityDecoder.js';
+import type { createEntityDecoder, EntityDecoderOptions } from './createEntityDecoder.js';
+import type { EntityTrie } from './createEntityTrie.js';
 
 /**
  * Same as {@linkcode createEntityDecoder}, but uses a prebuilt trie, so decoders that differ only in options can share
