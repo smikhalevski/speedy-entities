@@ -4,6 +4,8 @@ import * as entities from 'entities';
 import * as htmlEntities from 'html-entities';
 import * as he from 'he';
 
+declare const process: any;
+
 /**
  * If `true` then each measured operation processes all values of a group, so each value is weighted by its actual
  * cost. Otherwise, each value is measured in a separate test.
@@ -11,7 +13,7 @@ import * as he from 'he';
  * Calling `measure` once per value in the same test doesn't work: toofast merges samples of all measures, and fast
  * values collect far more samples, so they dominate the result.
  */
-const isGroupMeasure = false;
+const isGroupMeasure = process.env.GROUP_MEASURE === '1';
 
 const REPEAT_COUNT = 200;
 const MIXED_TEXT_LENGTH = 10_000;
@@ -20,7 +22,7 @@ const MIXED_TEXT_LENGTH = 10_000;
  * Concatenates tokens in a fixed pseudo-random order until the text reaches the length. Unlike a repeated pattern,
  * the result has no short period, so branch prediction can't memorize it.
  */
-function makeMixedText(tokens, length) {
+function makeMixedText(tokens: string[], length: number): string {
   let text = '';
   let seed = 1;
 
@@ -39,8 +41,8 @@ function makeMixedText(tokens, length) {
  * down every char read, or becomes a sequential string, depending on when GC runs. Copying every value makes each
  * library read the same kind of string in every run.
  */
-function toSequentialString(string) {
-  return JSON.parse(JSON.stringify(string));
+function toSequentialString(str: string): string {
+  return JSON.parse(JSON.stringify(str));
 }
 
 // Common entities are listed several times, so they occur as often as in real HTML
@@ -115,17 +117,21 @@ const valuesToEncode = {
   },
 };
 
-const htmlEntitiesDecodeHTMLOptions = { level: 'html5', scope: 'body' };
-const htmlEntitiesDecodeXMLOptions = { level: 'xml', scope: 'strict' };
-const htmlEntitiesEncodeXMLOptions = { level: 'xml', mode: 'nonAscii' };
-const htmlEntitiesEscapeXMLOptions = { level: 'xml', mode: 'specialChars' };
+const htmlEntitiesDecodeHTMLOptions: htmlEntities.DecodeOptions = { level: 'html5', scope: 'body' };
+const htmlEntitiesDecodeXMLOptions: htmlEntities.DecodeOptions = { level: 'xml', scope: 'strict' };
+const htmlEntitiesEncodeXMLOptions: htmlEntities.EncodeOptions = { level: 'xml', mode: 'nonAscii' };
+const htmlEntitiesEscapeXMLOptions: htmlEntities.EncodeOptions = { level: 'xml', mode: 'specialChars' };
 
 /**
  * Measures each implementation on each group of values.
  *
  * Each test runs in a separate process, so implementations don't affect each other's optimizations.
  */
-function describeImplementations(name, implementations, valueGroups) {
+function describeImplementations(
+  name: string,
+  implementations: Record<string, (value: string) => string>,
+  valueGroups: Record<string, Record<string, string>>
+) {
   describe(name, () => {
     for (const groupName of Object.keys(valueGroups)) {
       const values = valueGroups[groupName];

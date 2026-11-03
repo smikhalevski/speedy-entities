@@ -85,7 +85,7 @@ Results are in millions of operations per second (MHz). The higher number is bet
 
 Tests were conducted using [TooFast](https://github.com/smikhalevski/toofast#readme) on Apple M1 with Node.js v23.11.1.
 
-To reproduce [the performance test suite](./src/test/perf.js) results, clone this repo and run:
+To reproduce [the performance test suite](src/test/perf.ts) results, clone this repo and run:
 
 ```shell
 npm ci
