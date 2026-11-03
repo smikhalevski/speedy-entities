@@ -8,7 +8,7 @@ import {
   decodeXML,
   encodeXML,
   escapeXML,
-} from '../main/index.js';
+} from '../main/index.ts';
 
 test('decode example', () => {
   expect(decodeXML('&#X61;&#98;&lt')).toBe('ab&lt');

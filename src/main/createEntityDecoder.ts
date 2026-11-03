@@ -1,5 +1,5 @@
-import { createEntityTrie } from './createEntityTrie.js';
-import { createEntityTrieDecoder, type EntityTrieDecoderOptions } from './createEntityTrieDecoder.js';
+import { createEntityTrie } from './createEntityTrie.ts';
+import { createEntityTrieDecoder, type EntityTrieDecoderOptions } from './createEntityTrieDecoder.ts';
 
 /**
  * Options of {@linkcode createEntityDecoder}.

@@ -1,7 +1,6 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "allowImportingTsExtensions": false,
     "rootDir": "./src/main"
   },
   "include": ["./src/main/**/*"]

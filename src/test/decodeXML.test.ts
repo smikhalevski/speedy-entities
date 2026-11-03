@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { decodeXML } from '../main/decodeXML.js';
+import { decodeXML } from '../main/decodeXML.ts';
 
 describe('decodeXML', () => {
   test('decodes terminated decimal entities', () => {

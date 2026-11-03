@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { escapeXML } from '../main/escapeXML.js';
+import { escapeXML } from '../main/escapeXML.ts';
 
 describe('escapeXML', () => {
   test('escapes special chars', () => {

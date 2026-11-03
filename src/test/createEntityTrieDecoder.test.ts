@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { createEntityTrie } from '../main/createEntityTrie.js';
-import { createEntityTrieDecoder } from '../main/createEntityTrieDecoder.js';
+import { createEntityTrie } from '../main/createEntityTrie.ts';
+import { createEntityTrieDecoder } from '../main/createEntityTrieDecoder.ts';
 
 describe('createEntityTrieDecoder', () => {
   test('decoders that share a trie use their own options', () => {

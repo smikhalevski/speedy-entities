@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { decodeHTML, decodeHTMLAttribute } from '../main/decodeHTML.js';
-import htmlEntities from '../main/html-entities.js';
+import { decodeHTML, decodeHTMLAttribute } from '../main/decodeHTML.ts';
+import htmlEntities from '../main/html-entities.ts';
 
 describe('decodeHTML', () => {
   test('decodes terminated decimal entities', () => {

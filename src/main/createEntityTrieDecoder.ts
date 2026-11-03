@@ -1,4 +1,4 @@
-import type { createEntityTrie, EntityTrie } from './createEntityTrie.js';
+import type { createEntityTrie, EntityTrie } from './createEntityTrie.ts';
 
 /**
  * Options of {@linkcode createEntityTrieDecoder}.

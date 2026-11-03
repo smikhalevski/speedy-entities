@@ -1,11 +1,15 @@
 import { describe, expect, test } from 'vitest';
-import { createEntityTrie } from '../main/createEntityTrie.js';
-import { createEntityTrieDecoder } from '../main/createEntityTrieDecoder.js';
+import { createEntityTrie } from '../main/createEntityTrie.ts';
+import { createEntityTrieDecoder } from '../main/createEntityTrieDecoder.ts';
 
 describe('createEntityTrie', () => {
   test('keeps the child of any ASCII char in bounds', () => {
     // A long chain after the last node with several children
-    const { nodeBases, nodeChecks } = createEntityTrie({ 'a-z': 'aaa', aaa: 'bbb', ['z'.repeat(300)]: 'ccc' });
+    const { nodeBases, nodeChecks } = createEntityTrie({
+      'a-z': 'aaa',
+      aaa: 'bbb',
+      ['z'.repeat(300)]: 'ccc',
+    });
 
     for (let node = 0; node < nodeChecks.length; ++node) {
       if (node === 0 || nodeChecks[node] !== -1) {

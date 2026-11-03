@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { createEntityDecoder } from '../main/createEntityDecoder.js';
-import htmlEntities from '../main/html-entities.js';
+import { createEntityDecoder } from '../main/createEntityDecoder.ts';
+import htmlEntities from '../main/html-entities.ts';
 
 describe('createEntityDecoder', () => {
   test('supports named entities', () => {

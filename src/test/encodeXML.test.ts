@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { encodeXML } from '../main/encodeXML.js';
+import { encodeXML } from '../main/encodeXML.ts';
 
 describe('encodeXML', () => {
   test('encodes special chars', () => {

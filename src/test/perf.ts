@@ -1,7 +1,7 @@
-import { describe, measure, test } from 'toofast';
 import * as entities from 'entities';
 import * as he from 'he';
 import * as htmlEntities from 'html-entities';
+import { describe, measure, test } from 'toofast';
 // @ts-ignore npm run docs must not require lib
 import * as speedyEntities from '../../lib/index.js';
 
