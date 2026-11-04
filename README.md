@@ -90,8 +90,8 @@ Defaults to `true`.
 <dt><code>isAttributeValue</code></dt>
 <dd>
 
-If `true`, a named reference without `;` that is followed by `=` or an ASCII letter or digit isn't decoded, as HTML
-does in attribute values.
+If `true`, a named reference without `;` that is followed by `=` or an ASCII letter or digit isn't decoded, as HTML does
+in attribute values.
 
 Defaults to `false`.
 
@@ -125,8 +125,8 @@ decodeAttribute('&foo;&qux=1');
 
 # Encode
 
-`encodeXML` replaces `"&'<>` with XML entities and non-ASCII characters with numeric character references, so the
-output is ASCII-only. A lone surrogate is encoded as `&#xfffd;`.
+`encodeXML` replaces `"&'<>` with XML entities and non-ASCII characters with numeric character references, so the output
+is ASCII-only. A lone surrogate is encoded as `&#xfffd;`.
 
 `escapeXML` escapes only `"&'<>` characters.
 
@@ -191,5 +191,5 @@ spread between inputs.
 Pass a name pattern to run some of the tests:
 
 ```shell
-GROUP_MEASURE=1 npm run perf -- 'decodeHTML.*'
+GROUP_MEASURE=1 npm run perf -- 'decodeHTML*'
 ```
