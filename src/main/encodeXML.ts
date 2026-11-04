@@ -1,44 +1,174 @@
 const encodedCharRegExp = /["&'<>\u0080-\uFFFF]/g;
 
 /**
- * Same as {@linkcode escapeXML}, but also encodes non-ASCII characters as numeric character references, so the output
- * is ASCII-only and safe for any document encoding.
+ * 1 for ASCII chars that are encoded.
+ */
+const encodedAsciiFlags = new Uint8Array(128);
+
+for (const char of '"&\'<>') {
+  encodedAsciiFlags[char.charCodeAt(0)] = 1;
+}
+
+/**
+ * References for U+0080 to U+07FF, formatted in advance, since text in Latin, Greek, Cyrillic, Hebrew or Arabic script
+ * reuses a few dozen of them.
+ */
+const numericReferences: string[] = [];
+
+for (let codePoint = 0x80; codePoint < 0x800; ++codePoint) {
+  numericReferences.push('&#x' + codePoint.toString(16) + ';');
+}
+
+const hexDigitCharCodes = Uint8Array.from('0123456789abcdef', char => char.charCodeAt(0));
+
+/**
+ * Same as {@linkcode escapeXML}, but also encodes non-ASCII chars as numeric references, so the output is ASCII and
+ * safe for any document encoding. A lone surrogate is encoded as `&#xfffd;`.
  */
 export function encodeXML(input: string): string {
+  const inputLength = input.length;
+
   let output = '';
   let textIndex = 0;
+  let index = 0;
 
-  while (encodedCharRegExp.test(input)) {
-    let lastIndex = encodedCharRegExp.lastIndex;
+  while (index < inputLength) {
+    const charCode = input.charCodeAt(index);
 
-    const startIndex = lastIndex - 1;
+    if (!isEncodedCharCode(charCode)) {
+      // Encoded chars are often close to each other, so a short run of plain chars is read inline
+      const scanEndIndex = Math.min(index + 24, inputLength);
 
-    // Lone surrogates are encoded as is
-    const codePoint = input.codePointAt(startIndex)!;
+      do {
+        ++index;
+      } while (index < scanEndIndex && !isEncodedCharCode(input.charCodeAt(index)));
+
+      if (index < scanEndIndex) {
+        continue;
+      }
+      if (index === inputLength) {
+        break;
+      }
+
+      // In a longer run, the regexp finds the next encoded char faster than reading chars one by one
+      encodedCharRegExp.lastIndex = index;
+
+      if (!encodedCharRegExp.test(input)) {
+        break;
+      }
+
+      index = encodedCharRegExp.lastIndex - 1;
+      continue;
+    }
 
     let entity;
+    let nextIndex = index + 1;
 
-    if (codePoint >= 0x80) {
+    if (charCode >= 0xd800 && charCode <= 0xdfff) {
+      const codePoint = input.codePointAt(index)!;
+
       if (codePoint > 0xffff) {
-        // Skip the low surrogate
-        encodedCharRegExp.lastIndex = ++lastIndex;
+        entity = getNumericReference(codePoint);
+        nextIndex = index + 2;
+      } else {
+        // A lone surrogate isn't a Unicode scalar value, so HTML parsers, decodeHTML and decodeXML decode a reference
+        // to it as U+FFFD anyway
+        entity = '&#xfffd;';
       }
-      entity = '&#x' + codePoint.toString(16) + ';';
-    } else if (codePoint === 34) {
+    } else if (charCode >= 0x80) {
+      entity = getNumericReference(charCode);
+    } else if (charCode === 34) {
       entity = '&quot;';
-    } else if (codePoint === 38) {
+    } else if (charCode === 38) {
       entity = '&amp;';
-    } else if (codePoint === 39) {
+    } else if (charCode === 39) {
       entity = '&apos;';
-    } else if (codePoint === 60) {
+    } else if (charCode === 60) {
       entity = '&lt;';
     } else {
       entity = '&gt;';
     }
 
-    output += textIndex === startIndex ? entity : input.slice(textIndex, startIndex) + entity;
-    textIndex = lastIndex;
+    if (textIndex !== index) {
+      output += input.slice(textIndex, index);
+    }
+    output += entity;
+
+    textIndex = nextIndex;
+    index = nextIndex;
   }
 
-  return textIndex === 0 ? input : textIndex === input.length ? output : output + input.slice(textIndex);
+  return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.slice(textIndex);
+}
+
+function isEncodedCharCode(charCode: number): boolean {
+  return charCode >= 0x80 || encodedAsciiFlags[charCode] === 1;
+}
+
+// The code point must be at least 0x80
+function getNumericReference(codePoint: number): string {
+  return codePoint < 0x800 ? numericReferences[codePoint - 0x80] : formatNumericReference(codePoint);
+}
+
+/**
+ * Formats a reference like "&#x1f600;". Building it from char codes in one call is about twice as fast as toString(16)
+ * and concatenation. The code point must be at least 0x100.
+ */
+function formatNumericReference(codePoint: number): string {
+  if (codePoint < 0x1000) {
+    return String.fromCharCode(
+      /* & */ 38,
+      /* # */ 35,
+      /* x */ 120,
+      getHexDigitCharCode(codePoint, 8),
+      getHexDigitCharCode(codePoint, 4),
+      getHexDigitCharCode(codePoint, 0),
+      /* ; */ 59
+    );
+  }
+
+  if (codePoint < 0x10000) {
+    return String.fromCharCode(
+      /* & */ 38,
+      /* # */ 35,
+      /* x */ 120,
+      getHexDigitCharCode(codePoint, 12),
+      getHexDigitCharCode(codePoint, 8),
+      getHexDigitCharCode(codePoint, 4),
+      getHexDigitCharCode(codePoint, 0),
+      /* ; */ 59
+    );
+  }
+
+  if (codePoint < 0x100000) {
+    return String.fromCharCode(
+      /* & */ 38,
+      /* # */ 35,
+      /* x */ 120,
+      getHexDigitCharCode(codePoint, 16),
+      getHexDigitCharCode(codePoint, 12),
+      getHexDigitCharCode(codePoint, 8),
+      getHexDigitCharCode(codePoint, 4),
+      getHexDigitCharCode(codePoint, 0),
+      /* ; */ 59
+    );
+  }
+
+  return String.fromCharCode(
+    /* & */ 38,
+    /* # */ 35,
+    /* x */ 120,
+    getHexDigitCharCode(codePoint, 20),
+    getHexDigitCharCode(codePoint, 16),
+    getHexDigitCharCode(codePoint, 12),
+    getHexDigitCharCode(codePoint, 8),
+    getHexDigitCharCode(codePoint, 4),
+    getHexDigitCharCode(codePoint, 0),
+    /* ; */ 59
+  );
+}
+
+// The char code of the hex digit at the given bit offset
+function getHexDigitCharCode(codePoint: number, offset: number): number {
+  return hexDigitCharCodes[(codePoint >> offset) & 15];
 }

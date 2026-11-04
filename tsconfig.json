@@ -2,7 +2,6 @@
   "compilerOptions": {
     "declaration": true,
     "isolatedModules": true,
-    "allowImportingTsExtensions": true,
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -10,6 +9,9 @@
     "target": "ES2020",
     "module": "NodeNext",
     "lib": ["ES2020"],
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "outDir": "./lib"
   },
   "include": ["./src/**/*"]

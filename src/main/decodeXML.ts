@@ -1,8 +1,8 @@
-import { createEntityDecoder } from './createEntityDecoder.js';
-import xmlEntities from './xml-entities.js';
+import { createEntityDecoder } from './createEntityDecoder.ts';
+import xmlEntities from './xml-entities.ts';
 
 /**
- * Decodes XML entities and numeric character references in the input.
+ * Decodes numeric references and the five predefined XML entities. References must end with ";", as XML requires.
  */
 export const decodeXML = createEntityDecoder({
   entities: xmlEntities,
