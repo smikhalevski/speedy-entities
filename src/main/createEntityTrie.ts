@@ -105,7 +105,7 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
       (depth === nameLength || name.charCodeAt(depth) < previousName.charCodeAt(depth))
     ) {
       // The name goes before the previous name
-      return undefined;
+      return;
     }
 
     if (depth < nameLength && depth < previousNameLength) {
@@ -151,7 +151,7 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
     let base = firstUnusedIndex - nodeChars[firstChild];
 
     // Find a base that puts all children on unused indexes
-    for (;;) {
+    while (true) {
       if (base + 128 > size) {
         size <<= 1;
         nodeBases = growInt32Array(nodeBases, size, 0);
@@ -212,7 +212,11 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
     nodeValues[nodeIndexes[referenceNodes[referenceIndex]]] = entities[entityReferences[referenceIndex]];
   }
 
-  return { nodeBases: nodeBases.slice(0, finalSize), nodeChecks: nodeChecks.slice(0, finalSize), nodeValues };
+  return {
+    nodeBases: nodeBases.slice(0, finalSize),
+    nodeChecks: nodeChecks.slice(0, finalSize),
+    nodeValues,
+  };
 }
 
 function growInt32Array(array: Int32Array, size: number, fillValue: number): Int32Array<ArrayBuffer> {
