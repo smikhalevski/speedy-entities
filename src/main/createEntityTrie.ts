@@ -143,6 +143,9 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
   // The largest index placed by a node with several children, other children are placed before firstUnusedIndex
   let maxIndex = 128;
 
+  // The index where the search for a base of a node with several children starts, see below
+  let searchStartIndex = 128;
+
   for (let node = 0; node < nodeCount; ++node) {
     if ((nodeFlags[node] & 2) === 0) {
       continue;
@@ -152,8 +155,13 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
     const firstChild = node + 1;
     const hasSiblings = nextSiblings[firstChild] !== 0;
 
-    // Children are sorted by char, so the first child lands on the first unused index
-    let base = firstUnusedIndex - nodeChars[firstChild];
+    // Children are sorted by char, so the first child lands on the first unused index, or on searchStartIndex if a node
+    // with several children can't be placed before it
+    const startBase =
+      (hasSiblings && searchStartIndex > firstUnusedIndex ? searchStartIndex : firstUnusedIndex) -
+      nodeChars[firstChild];
+
+    let base = startBase;
 
     // Find a base that puts all children on unused indexes
     while (true) {
@@ -178,6 +186,12 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
         break;
       }
       ++base;
+    }
+
+    if (base - startBase > 256) {
+      // The holes that a long search passed rarely fit several children. Later searches skip them, since passing the
+      // same holes for each node would make building a table with many such nodes take quadratic time.
+      searchStartIndex = base + nodeChars[firstChild];
     }
 
     nodeBases[nodeIndex] = base;
