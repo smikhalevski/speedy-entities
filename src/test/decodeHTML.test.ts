@@ -1,3 +1,4 @@
+import * as entities from 'entities';
 import { describe, expect, test } from 'vitest';
 import { decodeHTML, decodeHTMLAttribute } from '../main/decodeHTML.ts';
 import htmlEntities from '../main/html-entities.ts';
@@ -47,8 +48,14 @@ describe('decodeHTML', () => {
   });
 
   test('decodes every HTML entity', () => {
-    for (const [entity, value] of Object.entries(htmlEntities)) {
-      expect(decodeHTML('&' + entity)).toBe(value);
+    const entityReferences = Object.keys(htmlEntities);
+
+    // The HTML standard defines 2231 named references
+    expect(entityReferences.length).toBe(2231);
+
+    // The entities package has its own table, so a wrong value in html-entities.ts fails the test
+    for (const entityReference of entityReferences) {
+      expect(decodeHTML('&' + entityReference)).toBe(entities.decodeHTML('&' + entityReference));
     }
   });
 
@@ -60,7 +67,7 @@ describe('decodeHTML', () => {
     expect(decodeHTML('&foo;')).toBe('&foo;');
   });
 
-  test('ignores entities without a leading ampersand', () => {
+  test('does not decode the output again', () => {
     expect(decodeHTML('&amp;amp;')).toBe('&amp;');
     expect(decodeHTML('&amp;#38;')).toBe('&#38;');
     expect(decodeHTML('&amp;#x26;')).toBe('&#x26;');

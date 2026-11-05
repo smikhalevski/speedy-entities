@@ -34,7 +34,7 @@ describe('decodeXML', () => {
     expect(decodeXML('&ltZZZ')).toBe('&ltZZZ');
   });
 
-  test('ignores entities without a leading ampersand', () => {
+  test('does not decode the output again', () => {
     expect(decodeXML('&amp;amp;')).toBe('&amp;');
     expect(decodeXML('&amp;#38;')).toBe('&#38;');
     expect(decodeXML('&amp;#x26;')).toBe('&#x26;');

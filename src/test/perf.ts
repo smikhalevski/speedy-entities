@@ -127,6 +127,12 @@ describeFunction('escapeXML', encodeInputs, {
   he: he.escape,
 });
 
+test('load decodeHTML module', () => {
+  let importCount = 0;
+
+  measure(() => import('../../lib/decodeHTML.js?' + importCount++));
+});
+
 type Libraries = Record<string, (input: string) => string>;
 
 /**

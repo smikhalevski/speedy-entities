@@ -56,6 +56,12 @@ describe('createEntityDecoder', () => {
     expect(decode('&aaa;')).toBe('ccc');
   });
 
+  test('uses the last value of named entities that have the same name if entities are not sorted', () => {
+    const decode = createEntityDecoder({ entities: { 'b;': 'aaa', '&a;': 'bbb', 'a;': 'ccc' } });
+
+    expect(decode('&a;')).toBe('ccc');
+  });
+
   test('does not match non-ASCII chars against entity names', () => {
     const decode = createEntityDecoder({ entities: { aaa: 'bbb' } });
 

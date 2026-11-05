@@ -1,4 +1,5 @@
 import type { createEntityTrie, EntityTrie } from './createEntityTrie.ts';
+import type { DoubleArrayTrie } from './DoubleArrayTrie.ts';
 
 /**
  * Options of {@linkcode createEntityTrieDecoder}.
@@ -44,7 +45,7 @@ export function createEntityTrieDecoder(
     isAttributeValue = false,
   } = options;
 
-  const { nodeBases, nodeChecks, nodeValues } = entityTrie;
+  const { nodeBases, nodeChecks, nodeValues } = entityTrie as DoubleArrayTrie;
 
   return input => {
     let output = '';
@@ -106,7 +107,7 @@ export function createEntityTrieDecoder(
         }
 
         if (endIndex !== startIndex) {
-          // At least one digit must present
+          // At least one digit must be present
 
           const isTerminated = endIndex < inputLength && input.charCodeAt(endIndex) === /* ; */ 59;
 

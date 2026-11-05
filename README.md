@@ -15,6 +15,13 @@
 npm install --save-prod speedy-entities
 ```
 
+Each function can also be imported from its own path. Unlike the package root, such a path loads only the modules that
+the function needs, so it doesn't build the HTML entity trie unless the function decodes HTML:
+
+```ts
+import { escapeXML } from 'speedy-entities/escapeXML';
+```
+
 # Decode
 
 There are three preconfigured decoders: `decodeXML`, `decodeHTML` and `decodeHTMLAttribute`.

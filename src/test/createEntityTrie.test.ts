@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { createEntityTrie } from '../main/createEntityTrie.ts';
 import { createEntityTrieDecoder } from '../main/createEntityTrieDecoder.ts';
+import type { DoubleArrayTrie } from '../main/DoubleArrayTrie.ts';
 
 describe('createEntityTrie', () => {
   test('keeps the child of any ASCII char in bounds', () => {
@@ -9,7 +10,7 @@ describe('createEntityTrie', () => {
       'a-z': 'aaa',
       aaa: 'bbb',
       ['z'.repeat(300)]: 'ccc',
-    });
+    }) as DoubleArrayTrie;
 
     for (let node = 0; node < nodeChecks.length; ++node) {
       if (node === 0 || nodeChecks[node] !== -1) {

@@ -1,22 +1,18 @@
+import type { DoubleArrayTrie } from './DoubleArrayTrie.ts';
+
+declare const entityTrieBrand: unique symbol;
+
 /**
- * A trie of entity names, see {@linkcode createEntityTrie}.
+ * A trie of entity names, see {@linkcode createEntityTrie}. Its contents are internal, so they can change in any
+ * release.
  */
 export interface EntityTrie {
   /**
-   * The child of a node for a char is at `nodeBases[node] + charCode`.
+   * Makes the type opaque, so only {@linkcode createEntityTrie} returns it.
+   *
+   * @internal
    */
-  nodeBases: Int32Array;
-
-  /**
-   * `nodeChecks[node] >> 1` is the parent of a node, and the low bit is set if an entity name ends at the node. -1
-   * marks an unused index.
-   */
-  nodeChecks: Int32Array;
-
-  /**
-   * The value of the entity name that ends at a node.
-   */
-  nodeValues: Array<string | undefined>;
+  readonly [entityTrieBrand]: true;
 }
 
 /**
@@ -51,7 +47,7 @@ export function createEntityTrie(entities: Record<string, string>): EntityTrie {
  * name. So nodes are numbered in preorder without lookups, and the first child of a node is the next node. Nodes are
  * placed in the same order, so a parent is placed before its children.
  */
-function buildEntityTrie(entities: Record<string, string>, entityReferences: string[]): EntityTrie | undefined {
+function buildEntityTrie(entities: Record<string, string>, entityReferences: string[]): DoubleArrayTrie | undefined {
   let charCount = 0;
 
   for (const entityReference of entityReferences) {
@@ -216,7 +212,7 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
     nodeBases: nodeBases.slice(0, finalSize),
     nodeChecks: nodeChecks.slice(0, finalSize),
     nodeValues,
-  };
+  } as DoubleArrayTrie;
 }
 
 function growInt32Array(array: Int32Array, size: number, fillValue: number): Int32Array<ArrayBuffer> {
