@@ -77,8 +77,9 @@ decode('&#X61;&#x62;&#x63;');
 <dt><code>entities</code></dt>
 <dd>
 
-Entity references mapped to their values. A reference is an optional `&`, a name of ASCII letters, digits and `-.:_`,
-and an optional `;`. If a reference has the `;`, the input needs it too.
+Entity references mapped to their values, or a list of references and values in turn, like `['&foo;', 'okay']`. A
+reference is an optional `&`, a name of ASCII letters, digits and `-.:_`, and an optional `;`. If a reference has the
+`;`, the input needs it too.
 
 `createEntityDecoder` throws an error if a reference doesn't match this format.
 

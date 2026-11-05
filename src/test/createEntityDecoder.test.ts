@@ -62,6 +62,24 @@ describe('createEntityDecoder', () => {
     expect(decode('&a;')).toBe('ccc');
   });
 
+  test('supports entities listed as references and values in turn', () => {
+    const decode = createEntityDecoder({ entities: ['bbb;', '111', '&aaa;', '222'] });
+
+    expect(decode('&aaa;&bbb;')).toBe('222111');
+  });
+
+  test('uses the last value of listed entities that have the same name', () => {
+    const decode = createEntityDecoder({ entities: ['b;', 'aaa', '&a;', 'bbb', 'a;', 'ccc'] });
+
+    expect(decode('&a;')).toBe('ccc');
+  });
+
+  test('throws if a listed entity reference has no value', () => {
+    expect(() => createEntityDecoder({ entities: ['aaa;'] })).toThrow(
+      'entities must list references and values in turn'
+    );
+  });
+
   test('does not match non-ASCII chars against entity names', () => {
     const decode = createEntityDecoder({ entities: { aaa: 'bbb' } });
 

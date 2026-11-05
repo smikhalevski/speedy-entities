@@ -48,14 +48,23 @@ describe('decodeHTML', () => {
   });
 
   test('decodes every HTML entity', () => {
-    const entityReferences = Object.keys(htmlEntities);
-
     // The HTML standard defines 2231 named references
-    expect(entityReferences.length).toBe(2231);
+    expect(htmlEntities.length).toBe(2231 * 2);
 
     // The entities package has its own table, so a wrong value in html-entities.ts fails the test
-    for (const entityReference of entityReferences) {
-      expect(decodeHTML('&' + entityReference)).toBe(entities.decodeHTML('&' + entityReference));
+    for (let index = 0; index < htmlEntities.length; index += 2) {
+      expect(decodeHTML('&' + htmlEntities[index])).toBe(entities.decodeHTML('&' + htmlEntities[index]));
+    }
+  });
+
+  test('builds the trie from a sorted list of valid HTML entity references', () => {
+    // The trie is built without checking the list
+    for (let index = 0; index < htmlEntities.length; index += 2) {
+      expect(htmlEntities[index]).toMatch(/^[a-zA-Z0-9]+;?$/);
+
+      if (index !== 0) {
+        expect(htmlEntities[index - 2] < htmlEntities[index]).toBe(true);
+      }
     }
   });
 

@@ -1,9 +1,10 @@
-import { createEntityTrie } from './createEntityTrie.ts';
 import { createEntityTrieDecoder } from './createEntityTrieDecoder.ts';
+import { buildDoubleArrayTrie } from './DoubleArrayTrie.ts';
 import htmlEntities from './html-entities.ts';
 
-// Decoders share the trie, since it takes a few milliseconds to build and about 120 kB to store
-const htmlEntityTrie = createEntityTrie(htmlEntities);
+// The list of HTML entities is sorted and valid, so the trie is built without checking it. Decoders share the trie,
+// since it takes a few milliseconds to build and about 120 kB to store.
+const htmlEntityTrie = buildDoubleArrayTrie(htmlEntities);
 
 /**
  * Decodes HTML entities and numeric references in text.

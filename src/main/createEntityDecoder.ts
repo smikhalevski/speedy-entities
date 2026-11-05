@@ -6,13 +6,13 @@ import { createEntityTrieDecoder, type EntityTrieDecoderOptions } from './create
  */
 export interface EntityDecoderOptions extends EntityTrieDecoderOptions {
   /**
-   * Entity references mapped to their values, for example `{ '&amp;': '&', 'lt;': '<' }`. A reference is an optional
-   * "&", a name of ASCII letters, digits and "-.:_", and an optional ";". If the reference has the ";", the input needs
-   * it too.
+   * Entity references mapped to their values, for example `{ '&amp;': '&', 'lt;': '<' }`, or a list of references and
+   * values in turn, for example `['&amp;', '&', 'lt;', '<']`. A reference is an optional "&", a name of ASCII letters,
+   * digits and "-.:_", and an optional ";". If the reference has the ";", the input needs it too.
    *
    * @default {}
    */
-  entities?: Record<string, string>;
+  entities?: Record<string, string> | readonly string[];
 }
 
 /**
