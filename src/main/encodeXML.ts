@@ -77,13 +77,13 @@ export function encodeXML(input: string): string {
       }
     } else if (charCode >= 0x80) {
       entity = getNumericReference(charCode);
-    } else if (charCode === 34) {
+    } else if (charCode === /* " */ 34) {
       entity = '&quot;';
-    } else if (charCode === 38) {
+    } else if (charCode === /* & */ 38) {
       entity = '&amp;';
-    } else if (charCode === 39) {
+    } else if (charCode === /* ' */ 39) {
       entity = '&apos;';
-    } else if (charCode === 60) {
+    } else if (charCode === /* < */ 60) {
       entity = '&lt;';
     } else {
       entity = '&gt;';

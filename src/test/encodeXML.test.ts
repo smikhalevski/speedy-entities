@@ -28,6 +28,9 @@ describe('encodeXML', () => {
   });
 
   test('encodes chars after long runs of plain chars', () => {
+    // The run fills the inline scan, so the regexp finds the char
+    expect(encodeXML('a'.repeat(24) + '<')).toBe('a'.repeat(24) + '&lt;');
+
     expect(encodeXML('a'.repeat(30) + '<')).toBe('a'.repeat(30) + '&lt;');
 
     // The previous call left the regexp's lastIndex past the end of this input

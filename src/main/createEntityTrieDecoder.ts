@@ -1,4 +1,5 @@
-import type { createEntityTrie, EntityTrie } from './createEntityTrie.ts';
+import { type DoubleArrayEntityTrie, type EntityTrie } from './createDoubleArrayEntityTrie.ts';
+import type { createEntityTrie } from './createEntityTrie.ts';
 
 /**
  * Options of {@linkcode createEntityTrieDecoder}.
@@ -44,7 +45,7 @@ export function createEntityTrieDecoder(
     isAttributeValue = false,
   } = options;
 
-  const { nodeBases, nodeChecks, nodeValues } = entityTrie;
+  const { nodeBases, nodeChecks, nodeValueIndexes, values } = entityTrie as DoubleArrayEntityTrie;
 
   return input => {
     let output = '';
@@ -106,7 +107,7 @@ export function createEntityTrieDecoder(
         }
 
         if (endIndex !== startIndex) {
-          // At least one digit must present
+          // At least one digit must be present
 
           const isTerminated = endIndex < inputLength && input.charCodeAt(endIndex) === /* ; */ 59;
 
@@ -133,6 +134,10 @@ export function createEntityTrieDecoder(
         let index = startIndex;
         let node = 0;
 
+        // The node where the longest entity name read so far ends, or 0. Its value is read once, after the loop, since
+        // reading the value at each node where a name ends makes decoding a few percent slower.
+        let valueNode = 0;
+
         while (index < inputLength) {
           const charCode = input.charCodeAt(index);
 
@@ -154,9 +159,13 @@ export function createEntityTrieDecoder(
 
           if ((childCheck & 1) === 1) {
             // An entity name ends at the node
-            value = nodeValues[node];
+            valueNode = node;
             endIndex = index;
           }
+        }
+
+        if (valueNode !== 0) {
+          value = values[nodeValueIndexes[valueNode]];
         }
 
         if (
@@ -195,6 +204,7 @@ export function createEntityTrieDecoder(
         charIndex = endIndex;
       }
     }
+
     return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.slice(textIndex);
   };
 }
