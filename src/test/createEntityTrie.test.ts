@@ -37,4 +37,23 @@ describe('createEntityTrie', () => {
       expect(decode('&' + name)).toBe(name + '!');
     }
   });
+
+  test('decodes every value of a table that has more than 65536 values', () => {
+    const entities: Record<string, string> = {};
+
+    // One value more than 2-byte indexes can address
+    for (let i = 0; i <= 0x10000; ++i) {
+      entities['a' + i + ';'] = 'b' + i;
+    }
+
+    let input = '';
+    let output = '';
+
+    for (const [entityReference, value] of Object.entries(entities)) {
+      input += '&' + entityReference;
+      output += value;
+    }
+
+    expect(createEntityTrieDecoder(createEntityTrie(entities))(input)).toBe(output);
+  });
 });

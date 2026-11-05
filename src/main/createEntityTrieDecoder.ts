@@ -45,7 +45,7 @@ export function createEntityTrieDecoder(
     isAttributeValue = false,
   } = options;
 
-  const { nodeBases, nodeChecks, nodeValues } = entityTrie as DoubleArrayTrie;
+  const { nodeBases, nodeChecks, nodeValueIndexes, values } = entityTrie as DoubleArrayTrie;
 
   return input => {
     let output = '';
@@ -134,6 +134,10 @@ export function createEntityTrieDecoder(
         let index = startIndex;
         let node = 0;
 
+        // The node where the longest entity name read so far ends, or 0. Its value is read once, after the loop, since
+        // reading the value at each node where a name ends makes decoding a few percent slower.
+        let valueNode = 0;
+
         while (index < inputLength) {
           const charCode = input.charCodeAt(index);
 
@@ -155,9 +159,13 @@ export function createEntityTrieDecoder(
 
           if ((childCheck & 1) === 1) {
             // An entity name ends at the node
-            value = nodeValues[node];
+            valueNode = node;
             endIndex = index;
           }
+        }
+
+        if (valueNode !== 0) {
+          value = values[nodeValueIndexes[valueNode]];
         }
 
         if (

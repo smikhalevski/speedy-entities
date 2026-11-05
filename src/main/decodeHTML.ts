@@ -2,7 +2,7 @@ import { createEntityTrie } from './createEntityTrie.ts';
 import { createEntityTrieDecoder } from './createEntityTrieDecoder.ts';
 import htmlEntities from './html-entities.ts';
 
-// Decoders share the trie, since it takes a few milliseconds to build and a few hundred kilobytes to store
+// Decoders share the trie, since it takes a few milliseconds to build and about 120 kB to store
 const htmlEntityTrie = createEntityTrie(htmlEntities);
 
 /**

@@ -65,8 +65,10 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
   // The next child of the same parent, or 0 for the last child
   const nextSiblings = new Int32Array(maxNodeCount);
 
-  // The node of each entity reference
-  const referenceNodes = new Int32Array(entityReferences.length);
+  // The index in values of the value of the entity name that ends at the node
+  const valueIndexes = new Int32Array(maxNodeCount);
+
+  const values: string[] = [];
 
   // The nodes of the previous name prefixes, indexed by prefix length
   const pathNodes = [0];
@@ -78,7 +80,7 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
     const entityReference = entityReferences[referenceIndex];
 
     if (!entityReferenceRegExp.test(entityReference)) {
-      throw new Error('Invalid entity reference: ' + entityReference);
+      throw new Error('Invalid entity reference: ' + JSON.stringify(entityReference));
     }
 
     const name = getEntityName(entityReference);
@@ -115,8 +117,15 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
       pathNodes[depth + 1] = nodeCount++;
     }
 
-    nodeFlags[pathNodes[nameLength]] |= 1;
-    referenceNodes[referenceIndex] = pathNodes[nameLength];
+    const node = pathNodes[nameLength];
+
+    if ((nodeFlags[node] & 1) === 0) {
+      nodeFlags[node] |= 1;
+      valueIndexes[node] = values.length;
+    }
+
+    // "&lt;" and "lt;" have the same node, so the latter overwrites the former
+    values[valueIndexes[node]] = entities[entityReference];
     previousName = name;
   }
 
@@ -201,17 +210,21 @@ function buildEntityTrie(entities: Record<string, string>, entityReferences: str
 
   // Keep base + charCode in bounds for any ASCII char
   const finalSize = maxIndex + 128;
-  const nodeValues = new Array<string | undefined>(finalSize).fill(undefined);
 
-  for (let referenceIndex = 0; referenceIndex < entityReferences.length; ++referenceIndex) {
-    // "&lt;" and "lt;" have the same node, so the latter overwrites the former
-    nodeValues[nodeIndexes[referenceNodes[referenceIndex]]] = entities[entityReferences[referenceIndex]];
+  // 2-byte indexes take half the memory and are enough for most tables
+  const nodeValueIndexes = values.length <= 0x10000 ? new Uint16Array(finalSize) : new Int32Array(finalSize);
+
+  for (let node = 1; node < nodeCount; ++node) {
+    if ((nodeFlags[node] & 1) === 1) {
+      nodeValueIndexes[nodeIndexes[node]] = valueIndexes[node];
+    }
   }
 
   return {
     nodeBases: nodeBases.slice(0, finalSize),
     nodeChecks: nodeChecks.slice(0, finalSize),
-    nodeValues,
+    nodeValueIndexes,
+    values,
   } as DoubleArrayTrie;
 }
 

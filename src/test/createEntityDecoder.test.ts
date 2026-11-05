@@ -70,7 +70,9 @@ describe('createEntityDecoder', () => {
   });
 
   test('throws if an entity reference is invalid', () => {
-    expect(() => createEntityDecoder({ entities: { 'aaa;bbb': 'ccc' } })).toThrow('Invalid entity reference: aaa;bbb');
+    expect(() => createEntityDecoder({ entities: { 'aaa;bbb': 'ccc' } })).toThrow(
+      'Invalid entity reference: "aaa;bbb"'
+    );
   });
 
   test('supports numeric references', () => {

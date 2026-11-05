@@ -17,7 +17,13 @@ export interface DoubleArrayTrie extends EntityTrie {
   nodeChecks: Int32Array;
 
   /**
-   * The value of the entity name that ends at a node.
+   * The index in `values` of the value of the entity name that ends at a node. Most nodes have no value, so values
+   * aren't stored per node.
    */
-  nodeValues: Array<string | undefined>;
+  nodeValueIndexes: Uint16Array | Int32Array;
+
+  /**
+   * The values of entity names, see `nodeValueIndexes`.
+   */
+  values: string[];
 }

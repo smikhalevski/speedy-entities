@@ -5,7 +5,7 @@
 [The fastest](#performance) XML/HTML entity encoder/decoder in
 [13 kB gzipped](https://bundlephobia.com/package/speedy-entities).
 
-- Keeps all HTML entities in about 150 kB of RAM.
+- Keeps all HTML entities in about 120 kB of RAM.
 - [13 kB gzipped](https://bundlephobia.com/package/speedy-entities), including all HTML entities.
 - Decodes HTML like browsers do, including all 2 231 named references and the special rules for attribute values.
 - Decodes your own entities with [custom decoders](#custom-decoder).
