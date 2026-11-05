@@ -1,6 +1,4 @@
-import { buildDoubleArrayTrie } from './DoubleArrayTrie.ts';
-
-declare const entityTrieBrand: unique symbol;
+import { buildDoubleArrayTrie, entityTrieBrand } from './DoubleArrayTrie.ts';
 
 /**
  * A trie of entity names, see {@linkcode createEntityTrie}. Its contents are internal, so they can change in any
@@ -8,7 +6,8 @@ declare const entityTrieBrand: unique symbol;
  */
 export interface EntityTrie {
   /**
-   * Makes the type opaque, so only {@linkcode createEntityTrie} returns it.
+   * Marks objects that {@linkcode createEntityTrie} returns. {@linkcode createEntityTrieDecoder} checks it at runtime,
+   * so it doesn't read a trie of an unknown layout.
    *
    * @internal
    */

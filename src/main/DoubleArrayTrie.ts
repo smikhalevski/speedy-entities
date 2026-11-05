@@ -1,6 +1,12 @@
 import type { createEntityTrie, EntityTrie } from './createEntityTrie.ts';
 
 /**
+ * The key of the brand of an {@linkcode EntityTrie}. The package doesn't export it, so an object has the brand only if
+ * this copy of the package built it. Tries built by another copy don't have it either, since their layout can differ.
+ */
+export const entityTrieBrand = Symbol('EntityTrie');
+
+/**
  * The contents of an {@linkcode EntityTrie}, see {@linkcode createEntityTrie}. The package doesn't export this module,
  * so the layout can change in any release.
  */
@@ -26,6 +32,13 @@ export interface DoubleArrayTrie extends EntityTrie {
    * The values of entity names, see `nodeValueIndexes`.
    */
   values: string[];
+}
+
+/**
+ * Returns `true` if the value is a trie built by this copy of the package.
+ */
+export function isDoubleArrayTrie(value: unknown): value is DoubleArrayTrie {
+  return typeof value === 'object' && value !== null && entityTrieBrand in value;
 }
 
 /**
@@ -222,11 +235,12 @@ export function buildDoubleArrayTrie(entityList: readonly string[]): DoubleArray
   nodeValueIndexes.set(valueIndexes.subarray(0, finalSize));
 
   return {
+    [entityTrieBrand]: true,
     nodeBases: nodeBases.slice(0, finalSize),
     nodeChecks: nodeChecks.slice(0, finalSize),
     nodeValueIndexes,
     values,
-  } as DoubleArrayTrie;
+  };
 }
 
 function growInt32Array(array: Int32Array, size: number, fillValue: number) {
