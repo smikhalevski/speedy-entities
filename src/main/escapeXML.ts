@@ -18,13 +18,13 @@ export function escapeXML(input: string): string {
 
     let entity;
 
-    if (charCode === 34) {
+    if (charCode === /* " */ 34) {
       entity = '&quot;';
-    } else if (charCode === 38) {
+    } else if (charCode === /* & */ 38) {
       entity = '&amp;';
-    } else if (charCode === 39) {
+    } else if (charCode === /* ' */ 39) {
       entity = '&apos;';
-    } else if (charCode === 60) {
+    } else if (charCode === /* < */ 60) {
       entity = '&lt;';
     } else {
       entity = '&gt;';

@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import { createEntityDecoder } from '../main/createEntityDecoder.ts';
-import htmlEntities from '../main/html-entities.ts';
+import entities from '../main/entities.ts';
 
 describe('createEntityDecoder', () => {
   test('supports named entities', () => {
-    const decode = createEntityDecoder({ entities: htmlEntities });
+    const decode = createEntityDecoder({ entities });
 
     expect(decode('&AMP;')).toBe('&');
     expect(decode('&AMP')).toBe('&');
@@ -62,16 +62,43 @@ describe('createEntityDecoder', () => {
     expect(decode('&a;')).toBe('ccc');
   });
 
-  test('supports entities listed as references and values in turn', () => {
-    const decode = createEntityDecoder({ entities: ['bbb;', '111', '&aaa;', '222'] });
+  test('ignores inherited named entities', () => {
+    const decode = createEntityDecoder({ entities: Object.create({ 'aaa;': 'bbb' }) });
 
-    expect(decode('&aaa;&bbb;')).toBe('222111');
+    expect(decode('&aaa;')).toBe('&aaa;');
+  });
+
+  test('supports entities listed as references and values in turn', () => {
+    const decode = createEntityDecoder({ entities: ['&aaa;', '111', 'bbb;', '222'] });
+
+    expect(decode('&aaa;&bbb;')).toBe('111222');
+  });
+
+  test('supports listed entities that are not sorted', () => {
+    const decode = createEntityDecoder({ entities: ['a;', 'aaa', 'b;', 'bbb', 'ab;', 'ccc'] });
+
+    expect(decode('&a;&ab;&b;')).toBe('aaacccbbb');
+  });
+
+  test('sorts listed entities by names without "&"', () => {
+    // Sorted as listed, but "b;" sorts after "a;" once "&" is stripped
+    const decode = createEntityDecoder({ entities: ['&ab;', 'aaa', '&b;', 'bbb', 'a;', 'ccc'] });
+
+    expect(decode('&ab;&b;&a;')).toBe('aaabbbccc');
+  });
+
+  test('does not change listed entities', () => {
+    const entities = ['b;', 'bbb', '&a;', 'aaa'];
+
+    createEntityDecoder({ entities });
+
+    expect(entities).toEqual(['b;', 'bbb', '&a;', 'aaa']);
   });
 
   test('uses the last value of listed entities that have the same name', () => {
-    const decode = createEntityDecoder({ entities: ['b;', 'aaa', '&a;', 'bbb', 'a;', 'ccc'] });
+    const decode = createEntityDecoder({ entities: ['b;', 'aaa', '&a;', '111', 'a;', '222', 'a;', '333'] });
 
-    expect(decode('&a;')).toBe('ccc');
+    expect(decode('&a;')).toBe('333');
   });
 
   test('throws if a listed entity reference has no value', () => {
@@ -93,6 +120,24 @@ describe('createEntityDecoder', () => {
     );
   });
 
+  test('throws if a listed entity reference is invalid', () => {
+    expect(() => createEntityDecoder({ entities: ['aaa;bbb', 'ccc'] })).toThrow('Invalid entity reference: "aaa;bbb"');
+  });
+
+  test('throws if a listed entity reference is not a string', () => {
+    // @ts-expect-error The reference is a number
+    const entities: string[] = [111, 'aaa'];
+
+    expect(() => createEntityDecoder({ entities })).toThrow('Invalid entity reference: 111');
+  });
+
+  test('throws if a listed entity value is not a string', () => {
+    // @ts-expect-error The value is a number
+    const entities: string[] = ['aaa;', 111];
+
+    expect(() => createEntityDecoder({ entities })).toThrow('Value of entity reference must be a string: "aaa;"');
+  });
+
   test('supports numeric references', () => {
     const decode = createEntityDecoder();
 
@@ -100,6 +145,7 @@ describe('createEntityDecoder', () => {
     expect(decode('&#97;&#98;&#99;')).toBe('abc');
     expect(decode('&#X3C;')).toBe('<');
     expect(decode('&#x3c;')).toBe('<');
+    expect(decode('&#xA9;')).toBe('\u00A9');
   });
 
   test('does not require a semicolon for numeric references', () => {
@@ -146,6 +192,12 @@ describe('createEntityDecoder', () => {
     }
   });
 
+  test('does not remap C1 controls if areC1ControlsRemapped is false', () => {
+    const decode = createEntityDecoder({ areC1ControlsRemapped: false });
+
+    expect(decode('&#128;')).toBe('\u0080');
+  });
+
   test('renders illegal code points as a replacement character', () => {
     const decode = createEntityDecoder();
 
@@ -168,7 +220,7 @@ describe('createEntityDecoder', () => {
     expect(decode('&#x100000041;')).toBe('\uFFFD');
   });
 
-  test('preserves invalid entities as is', () => {
+  test('preserves invalid references as is', () => {
     const decode = createEntityDecoder();
 
     expect(decode('&#;')).toBe('&#;');
@@ -184,13 +236,15 @@ describe('createEntityDecoder', () => {
   test('does not decode unterminated named entities followed by "=" or an alphanumeric char in attribute values', () => {
     const decode = createEntityDecoder({ entities: { aaa: 'bbb' }, isAttributeValue: true });
 
-    expect(decode('&aaa= &aaab &aaaB &aaa1')).toBe('&aaa= &aaab &aaaB &aaa1');
+    // "=" and the ends of the ranges of ASCII letters and digits
+    expect(decode('&aaa= &aaaa &aaaz &aaaA &aaaZ &aaa0 &aaa9')).toBe('&aaa= &aaaa &aaaz &aaaA &aaaZ &aaa0 &aaa9');
   });
 
   test('decodes unterminated named entities followed by other chars in attribute values', () => {
     const decode = createEntityDecoder({ entities: { aaa: 'bbb' }, isAttributeValue: true });
 
-    expect(decode('&aaa-&aaa')).toBe('bbb-bbb');
+    // The chars next to the ranges of ASCII letters and digits
+    expect(decode('&aaa/&aaa:&aaa@&aaa[&aaa`&aaa{&aaa')).toBe('bbb/bbb:bbb@bbb[bbb`bbb{bbb');
   });
 
   test('decodes terminated named entities followed by "=" in attribute values', () => {

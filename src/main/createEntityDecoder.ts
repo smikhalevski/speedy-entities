@@ -17,8 +17,6 @@ export interface EntityDecoderOptions extends EntityTrieDecoderOptions {
 
 /**
  * Creates a decoder for numeric references and the given named entities.
- *
- * @throws Error if an entity reference is invalid, see {@linkcode EntityDecoderOptions.entities}.
  */
 export function createEntityDecoder(options: EntityDecoderOptions = {}): (input: string) => string {
   const { entities = {} } = options;

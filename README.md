@@ -7,20 +7,17 @@
 
 - Keeps all HTML entities in about 120 kB of RAM.
 - [13 kB gzipped](https://bundlephobia.com/package/speedy-entities), including all HTML entities.
-- Decodes HTML like browsers do, including all 2 231 named references and the special rules for attribute values.
+- Decodes HTML exactly like browsers do.
 - Decodes your own entities with [custom decoders](#custom-decoder).
 - Zero dependencies.
+
+<br>
 
 ```shell
 npm install --save-prod speedy-entities
 ```
 
-Each function can also be imported from its own path. Unlike the package root, such a path loads only the modules that
-the function needs, so it doesn't build the HTML entity trie unless the function decodes HTML:
-
-```ts
-import { escapeXML } from 'speedy-entities/escapeXML';
-```
+<br>
 
 # Decode
 

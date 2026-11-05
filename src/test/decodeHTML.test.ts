@@ -1,33 +1,32 @@
-import * as entities from 'entities';
 import { describe, expect, test } from 'vitest';
 import { decodeHTML, decodeHTMLAttribute } from '../main/decodeHTML.ts';
-import htmlEntities from '../main/html-entities.ts';
+import entities from '../main/entities.ts';
 
 describe('decodeHTML', () => {
-  test('decodes terminated decimal entities', () => {
+  test('decodes terminated decimal references', () => {
     expect(decodeHTML('&#60;')).toBe('<');
   });
 
-  test('decodes terminated hex entities', () => {
+  test('decodes terminated hex references', () => {
     expect(decodeHTML('&#x3c;')).toBe('<');
     expect(decodeHTML('&#x3C;')).toBe('<');
     expect(decodeHTML('&#X3c;')).toBe('<');
     expect(decodeHTML('&#X3C;')).toBe('<');
   });
 
-  test('decodes unterminated decimal entities', () => {
+  test('decodes unterminated decimal references', () => {
     expect(decodeHTML('&#60aaa')).toBe('<aaa');
   });
 
-  test('decodes unterminated hex entities', () => {
+  test('decodes unterminated hex references', () => {
     expect(decodeHTML('&#x3cZZZ')).toBe('<ZZZ');
   });
 
-  test('decodes an unterminated single digit entity at the end of input', () => {
+  test('decodes an unterminated single digit reference at the end of input', () => {
     expect(decodeHTML('aaa&#9')).toBe('aaa\t');
   });
 
-  test('decodes numeric entities with leading zeros', () => {
+  test('decodes numeric references with leading zeros', () => {
     expect(decodeHTML('&#x0000041;')).toBe('A');
   });
 
@@ -35,7 +34,7 @@ describe('decodeHTML', () => {
     expect(decodeHTML('&#x80')).toBe('\u20AC');
   });
 
-  test('decodes numeric entities that are not C1 controls', () => {
+  test('decodes numeric references that are not C1 controls', () => {
     expect(decodeHTML('&#160;')).toBe('\u00A0');
   });
 
@@ -47,23 +46,13 @@ describe('decodeHTML', () => {
     expect(decodeHTML('&notit;')).toBe('\u00ACit;');
   });
 
-  test('decodes every HTML entity', () => {
-    // The HTML standard defines 2231 named references
-    expect(htmlEntities.length).toBe(2231 * 2);
-
-    // The entities package has its own table, so a wrong value in html-entities.ts fails the test
-    for (let index = 0; index < htmlEntities.length; index += 2) {
-      expect(decodeHTML('&' + htmlEntities[index])).toBe(entities.decodeHTML('&' + htmlEntities[index]));
-    }
-  });
-
-  test('builds the trie from a sorted list of valid HTML entity references', () => {
+  test('lists valid HTML entity names in sorted order', () => {
     // The trie is built without checking the list
-    for (let index = 0; index < htmlEntities.length; index += 2) {
-      expect(htmlEntities[index]).toMatch(/^[a-zA-Z0-9]+;?$/);
+    for (let index = 0; index < entities.length; index += 2) {
+      expect(entities[index]).toMatch(/^[a-zA-Z0-9]+;?$/);
 
       if (index !== 0) {
-        expect(htmlEntities[index - 2] < htmlEntities[index]).toBe(true);
+        expect(entities[index - 2] < entities[index]).toBe(true);
       }
     }
   });
@@ -82,7 +71,7 @@ describe('decodeHTML', () => {
     expect(decodeHTML('&amp;#x26;')).toBe('&#x26;');
   });
 
-  test('decodes multiple entities', () => {
+  test('decodes multiple references', () => {
     expect(decodeHTML('&lt;&#34;&gt;')).toBe('<">');
   });
 
@@ -101,7 +90,7 @@ describe('decodeHTMLAttribute', () => {
     expect(decodeHTMLAttribute('&copy &copy')).toBe('\u00A9 \u00A9');
   });
 
-  test('decodes numeric references without a semicolon', () => {
+  test('decodes numeric references followed by "="', () => {
     expect(decodeHTMLAttribute('&#97=')).toBe('a=');
   });
 

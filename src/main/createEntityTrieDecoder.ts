@@ -1,5 +1,5 @@
-import type { createEntityTrie, EntityTrie } from './createEntityTrie.ts';
-import { isDoubleArrayTrie } from './DoubleArrayTrie.ts';
+import { type DoubleArrayEntityTrie, type EntityTrie } from './createDoubleArrayEntityTrie.ts';
+import type { createEntityTrie } from './createEntityTrie.ts';
 
 /**
  * Options of {@linkcode createEntityTrieDecoder}.
@@ -34,24 +34,18 @@ export interface EntityTrieDecoderOptions {
 /**
  * Creates a decoder that uses a trie from {@linkcode createEntityTrie}, so decoders that differ only in options can
  * share a trie.
- *
- * @throws Error if the trie isn't created by {@linkcode createEntityTrie}.
  */
 export function createEntityTrieDecoder(
   entityTrie: EntityTrie,
   options: EntityTrieDecoderOptions = {}
 ): (input: string) => string {
-  if (!isDoubleArrayTrie(entityTrie)) {
-    throw new Error('entityTrie must be created by createEntityTrie');
-  }
-
   const {
     isNumericReferenceSemicolonRequired = false,
     areC1ControlsRemapped = true,
     isAttributeValue = false,
   } = options;
 
-  const { nodeBases, nodeChecks, nodeValueIndexes, values } = entityTrie;
+  const { nodeBases, nodeChecks, nodeValueIndexes, values } = entityTrie as DoubleArrayEntityTrie;
 
   return input => {
     let output = '';
@@ -210,6 +204,7 @@ export function createEntityTrieDecoder(
         charIndex = endIndex;
       }
     }
+
     return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.slice(textIndex);
   };
 }

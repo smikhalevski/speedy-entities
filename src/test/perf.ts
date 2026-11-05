@@ -2,7 +2,7 @@ import * as entities from 'entities';
 import * as he from 'he';
 import * as htmlEntities from 'html-entities';
 import { describe, measure, test } from 'toofast';
-// @ts-ignore npm run docs must not require lib
+// @ts-ignore
 import * as speedyEntities from '../../lib/index.js';
 
 // Node.js types aren't loaded by tsconfig.json
@@ -127,7 +127,7 @@ describeFunction('escapeXML', encodeInputs, {
   he: he.escape,
 });
 
-test('load decodeHTML module', () => {
+test('cold import of decodeHTML', () => {
   let importCount = 0;
 
   measure(() => import('../../lib/decodeHTML.js?' + importCount++));

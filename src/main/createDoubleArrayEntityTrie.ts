@@ -1,16 +1,26 @@
-import type { createEntityTrie, EntityTrie } from './createEntityTrie.ts';
+import type { createEntityTrie } from './createEntityTrie.ts';
+
+declare const OPAQUE_BRAND: unique symbol;
 
 /**
- * The key of the brand of an {@linkcode EntityTrie}. The package doesn't export it, so an object has the brand only if
- * this copy of the package built it. Tries built by another copy don't have it either, since their layout can differ.
+ * A trie of entity names, see {@linkcode createEntityTrie}. Its contents are internal, so they can change in any
+ * release.
  */
-export const entityTrieBrand = Symbol('EntityTrie');
+export interface EntityTrie {
+  /**
+   * Marks objects that {@linkcode createEntityTrie} returns. {@linkcode createEntityTrieDecoder} checks it at runtime,
+   * so it doesn't read a trie of an unknown layout.
+   *
+   * @internal
+   */
+  readonly [OPAQUE_BRAND]: never;
+}
 
 /**
  * The contents of an {@linkcode EntityTrie}, see {@linkcode createEntityTrie}. The package doesn't export this module,
  * so the layout can change in any release.
  */
-export interface DoubleArrayTrie extends EntityTrie {
+export interface DoubleArrayEntityTrie extends EntityTrie {
   /**
    * The child of a node for a char is at `nodeBases[node] + charCode`.
    */
@@ -35,13 +45,6 @@ export interface DoubleArrayTrie extends EntityTrie {
 }
 
 /**
- * Returns `true` if the value is a trie built by this copy of the package.
- */
-export function isDoubleArrayTrie(value: unknown): value is DoubleArrayTrie {
-  return typeof value === 'object' && value !== null && entityTrieBrand in value;
-}
-
-/**
  * Builds a trie from entity names and their values in turn, like `['amp', '&', 'amp;', '&']`. Names must be sorted,
  * valid, and have no leading "&", see {@linkcode createEntityTrie}. If a name is listed several times, its last value
  * is used.
@@ -50,11 +53,11 @@ export function isDoubleArrayTrie(value: unknown): value is DoubleArrayTrie {
  * that go through a child of a node are next to each other, so they are found without lookups. The rest of a name that
  * no other name goes through is a chain of single children, which is placed in one go.
  */
-export function buildDoubleArrayTrie(entityList: readonly string[]): DoubleArrayTrie {
+export function createDoubleArrayEntityTrie(entities: readonly string[]): DoubleArrayEntityTrie {
   let charCount = 0;
 
-  for (let index = 0; index < entityList.length; index += 2) {
-    charCount += entityList[index].length;
+  for (let index = 0; index < entities.length; index += 2) {
+    charCount += entities[index].length;
   }
 
   // Each char adds at most one node, and arrays grow if nodes don't pack tightly
@@ -83,7 +86,7 @@ export function buildDoubleArrayTrie(entityList: readonly string[]): DoubleArray
 
   // Nodes to visit, four numbers each: the index of a node, the start and the end of the names in entityList that go
   // through it, and its depth
-  const stack = [0, 0, entityList.length, 0];
+  const stack = [0, 0, entities.length, 0];
 
   let stackLength = stack.length;
 
@@ -96,14 +99,14 @@ export function buildDoubleArrayTrie(entityList: readonly string[]): DoubleArray
 
     let nameStart = stack[stackLength + 1];
 
-    if (nameStart !== nameEnd && entityList[nameStart].length === depth) {
+    if (nameStart !== nameEnd && entities[nameStart].length === depth) {
       // A name ends at the node, it sorts before longer names, and copies of it follow it
       do {
         nameStart += 2;
-      } while (nameStart !== nameEnd && entityList[nameStart].length === depth);
+      } while (nameStart !== nameEnd && entities[nameStart].length === depth);
 
       valueIndexes[nodeIndex] = values.length;
-      values.push(entityList[nameStart - 1]);
+      values.push(entities[nameStart - 1]);
     }
 
     if (nameStart === nameEnd) {
@@ -112,7 +115,7 @@ export function buildDoubleArrayTrie(entityList: readonly string[]): DoubleArray
 
     if (nameStart + 2 === nameEnd) {
       // No other name goes through the rest of this name, so each of its chars is a single child
-      const name = entityList[nameStart];
+      const name = entities[nameStart];
 
       let parentIndex = nodeIndex;
 
@@ -134,7 +137,7 @@ export function buildDoubleArrayTrie(entityList: readonly string[]): DoubleArray
       }
 
       valueIndexes[parentIndex] = values.length;
-      values.push(entityList[nameStart + 1]);
+      values.push(entities[nameStart + 1]);
       continue;
     }
 
@@ -142,14 +145,14 @@ export function buildDoubleArrayTrie(entityList: readonly string[]): DoubleArray
     let childCount = 0;
 
     for (let index = nameStart; index !== nameEnd; ++childCount) {
-      const charCode = entityList[index].charCodeAt(depth);
+      const charCode = entities[index].charCodeAt(depth);
 
       childChars[childCount] = charCode;
       childNameStarts[childCount] = index;
 
       do {
         index += 2;
-      } while (index !== nameEnd && entityList[index].charCodeAt(depth) === charCode);
+      } while (index !== nameEnd && entities[index].charCodeAt(depth) === charCode);
 
       childNameEnds[childCount] = index;
     }
@@ -201,7 +204,7 @@ export function buildDoubleArrayTrie(entityList: readonly string[]): DoubleArray
       const index = base + childChars[childIndex];
 
       // An entity name ends at a child if the first name that goes through it ends there
-      nodeChecks[index] = (nodeIndex << 1) | (entityList[childNameStarts[childIndex]].length === depth + 1 ? 1 : 0);
+      nodeChecks[index] = (nodeIndex << 1) | (entities[childNameStarts[childIndex]].length === depth + 1 ? 1 : 0);
 
       if (!isOnlyChild && index > maxIndex) {
         maxIndex = index;
@@ -235,12 +238,11 @@ export function buildDoubleArrayTrie(entityList: readonly string[]): DoubleArray
   nodeValueIndexes.set(valueIndexes.subarray(0, finalSize));
 
   return {
-    [entityTrieBrand]: true,
     nodeBases: nodeBases.slice(0, finalSize),
     nodeChecks: nodeChecks.slice(0, finalSize),
     nodeValueIndexes,
     values,
-  };
+  } as DoubleArrayEntityTrie;
 }
 
 function growInt32Array(array: Int32Array, size: number, fillValue: number) {

@@ -2,9 +2,6 @@
  * Decodes numeric references and the five predefined XML entities. References must end with ";", as XML requires.
  */
 export function decodeXML(input: string): string {
-  // Unlike decoders from createEntityDecoder, this one compares chars with the five entity names directly instead of
-  // walking a trie, which makes it 20-40% faster
-
   let charIndex = input.indexOf('&');
 
   if (charIndex === -1) {
@@ -143,6 +140,7 @@ export function decodeXML(input: string): string {
     if (textIndex !== charIndex) {
       output += input.slice(textIndex, charIndex);
     }
+
     output += value;
     textIndex = endIndex;
 

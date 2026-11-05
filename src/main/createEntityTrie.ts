@@ -1,92 +1,91 @@
-import { buildDoubleArrayTrie, entityTrieBrand } from './DoubleArrayTrie.ts';
-
-/**
- * A trie of entity names, see {@linkcode createEntityTrie}. Its contents are internal, so they can change in any
- * release.
- */
-export interface EntityTrie {
-  /**
-   * Marks objects that {@linkcode createEntityTrie} returns. {@linkcode createEntityTrieDecoder} checks it at runtime,
-   * so it doesn't read a trie of an unknown layout.
-   *
-   * @internal
-   */
-  readonly [entityTrieBrand]: true;
-}
+import { createDoubleArrayEntityTrie, type EntityTrie } from './createDoubleArrayEntityTrie.ts';
 
 /**
  * An optional "&", a name of ASCII letters, digits and "-.:_", and an optional ";".
  */
-const entityReferenceRegExp = /^&?[a-zA-Z0-9.:_-]+;?$/;
+const entityRegExp = /^&?[a-zA-Z0-9.:_-]+;?$/;
 
 /**
  * Builds a trie of entity names. Pass it to {@linkcode createEntityTrieDecoder} to create decoders that share it,
  * since building a trie takes time and memory.
  *
- * It's a [double-array trie](https://en.wikipedia.org/wiki/Trie#Implementation_strategies): finding the child of a
- * node takes two array reads and no hashing.
- *
  * @param entities Entity references mapped to their values, or a list of references and values in turn, see
  * {@linkcode EntityDecoderOptions.entities}.
- * @throws Error if an entity reference is invalid, or a listed reference has no value.
  */
 export function createEntityTrie(entities: Record<string, string> | readonly string[]): EntityTrie {
-  // Names without "&" and values in turn
-  const entityList: string[] = [];
-
-  if (isEntityList(entities)) {
+  if (Array.isArray(entities)) {
     if (entities.length % 2 !== 0) {
       throw new Error('entities must list references and values in turn');
     }
-    for (let index = 0; index < entities.length; index += 2) {
-      addEntity(entityList, entities[index], entities[index + 1]);
-    }
-  } else {
-    for (const entityReference of Object.keys(entities)) {
-      addEntity(entityList, entityReference, entities[entityReference]);
-    }
+
+    return createEntityTrieFromArray(entities);
   }
 
-  // Entity tables are usually sorted, so entities are sorted only if they aren't
-  return buildDoubleArrayTrie(isSortedByName(entityList) ? entityList : sortByName(entityList));
-}
+  const uncheckedEntities = [];
 
-function isEntityList(entities: Record<string, string> | readonly string[]): entities is readonly string[] {
-  return Array.isArray(entities);
-}
-
-function addEntity(entityList: string[], entityReference: string, value: string) {
-  if (!entityReferenceRegExp.test(entityReference)) {
-    throw new Error('Invalid entity reference: ' + JSON.stringify(entityReference));
+  for (const entity of Object.keys(entities)) {
+    uncheckedEntities.push(entity, (entities as Record<string, string>)[entity]);
   }
 
-  // Skip the leading ampersand
-  entityList.push(entityReference.charCodeAt(0) === /* & */ 38 ? entityReference.slice(1) : entityReference, value);
+  return createEntityTrieFromArray(uncheckedEntities);
 }
 
-function isSortedByName(entityList: string[]) {
-  for (let index = 2; index < entityList.length; index += 2) {
-    if (entityList[index - 2] > entityList[index]) {
-      return false;
+/**
+ * Builds a trie from references and values in turn. Lists are usually sorted and have no "&", so a list is copied only
+ * if a name has "&" or names aren't sorted.
+ */
+function createEntityTrieFromArray(uncheckedEntities: string[]): EntityTrie {
+  let checkedEntities = uncheckedEntities;
+
+  let isSorted = true;
+  let previousEntity = '';
+
+  for (let index = 0; index < uncheckedEntities.length; index += 2) {
+    let entity = uncheckedEntities[index];
+
+    if (typeof entity !== 'string' || !entityRegExp.test(entity)) {
+      throw new Error('Invalid entity reference: ' + JSON.stringify(entity));
     }
+
+    if (typeof uncheckedEntities[index + 1] !== 'string') {
+      throw new Error('Value of entity reference must be a string: ' + JSON.stringify(entity));
+    }
+
+    if (entity.charCodeAt(0) === /* & */ 38) {
+      entity = entity.slice(1);
+
+      if (checkedEntities === uncheckedEntities) {
+        checkedEntities = uncheckedEntities.slice(0);
+      }
+      checkedEntities[index] = entity;
+    }
+
+    // Stripping "&" can change the order, so entities are compared without it
+    if (entity < previousEntity) {
+      isSorted = false;
+    }
+
+    previousEntity = entity;
   }
-  return true;
+
+  return createDoubleArrayEntityTrie(isSorted ? checkedEntities : sortByEntityReference(checkedEntities));
 }
 
 // Sort is stable, so "&lt;" and "lt;" keep their order, and the value of the latter is used
-function sortByName(entityList: string[]) {
-  const nameIndexes = [];
+function sortByEntityReference(entities: readonly string[]) {
+  const indexes = new Uint32Array(entities.length / 2);
 
-  for (let index = 0; index < entityList.length; index += 2) {
-    nameIndexes.push(index);
+  for (let index = 0; index < indexes.length; ++index) {
+    indexes[index] = index * 2;
   }
 
-  nameIndexes.sort((a, b) => (entityList[a] < entityList[b] ? -1 : entityList[a] > entityList[b] ? 1 : 0));
+  indexes.sort((a, b) => (entities[a] < entities[b] ? -1 : entities[a] > entities[b] ? 1 : 0));
 
-  const sortedEntityList = [];
+  const sortedEntities = [];
 
-  for (const index of nameIndexes) {
-    sortedEntityList.push(entityList[index], entityList[index + 1]);
+  for (const index of indexes) {
+    sortedEntities.push(entities[index], entities[index + 1]);
   }
-  return sortedEntityList;
+
+  return sortedEntities;
 }
