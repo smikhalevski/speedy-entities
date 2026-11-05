@@ -3,10 +3,10 @@
 </p>
 
 [The fastest](#performance) XML/HTML entity encoder/decoder in
-[13 kB gzipped](https://bundlephobia.com/package/speedy-entities).
+[15 kB gzipped](https://bundlephobia.com/package/speedy-entities).
 
 - Keeps all HTML entities in about 120 kB of RAM.
-- [13 kB gzipped](https://bundlephobia.com/package/speedy-entities), including all HTML entities.
+- [15 kB gzipped](https://bundlephobia.com/package/speedy-entities), including all HTML entities.
 - Decodes HTML exactly like browsers do.
 - Decodes your own entities with [custom decoders](#custom-decoder).
 - Zero dependencies.
@@ -16,8 +16,6 @@
 ```shell
 npm install --save-prod speedy-entities
 ```
-
-<br>
 
 # Decode
 
@@ -157,12 +155,12 @@ escapeXML('&😘❤️');
 
 Results are in thousands of operations per second (kHz). The higher number is better.
 
-|                                                                 Library |                                                      Library Size |   Decode HTML | Decode XML |   Encode XML |    Escape XML |
-| ----------------------------------------------------------------------: | ----------------------------------------------------------------: | ------------: | ---------: | -----------: | ------------: |
-|                                           speedy-&#xFEFF;entities@4.0.0 | [13.6 kB](https://bundlephobia.com/package/speedy-entities@3.1.0) | 🥇 **161.74** |  🥈 181.92 | 🥇 **85.43** | 🥇 **216.82** |
-|                      [entities](https://github.com/fb55/entities)@9.0.0 |        [21.7 kB](https://bundlephobia.com/package/entities@6.0.1) |        150.36 | **202.38** |        66.02 |        198.83 |
-| [html-&#xFEFF;entities](https://github.com/mdevils/html-entities)@2.6.0 |   [13.3 kB](https://bundlephobia.com/package/html-entities@2.6.0) |         39.64 |      49.36 |        33.76 |        127.65 |
-|                         [he](https://github.com/mathiasbynens/he)@2.0.0 |              [29.9 kB](https://bundlephobia.com/package/he@1.2.0) |         30.52 |      30.92 |        21.78 |        129.98 |
+|                                                                 Library |                                                      Library Size |   Decode HTML |    Decode XML |   Encode XML |    Escape XML |
+| ----------------------------------------------------------------------: | ----------------------------------------------------------------: | ------------: | ------------: | -----------: | ------------: |
+|                                           speedy-&#xFEFF;entities@4.0.0 | [14.9 kB](https://bundlephobia.com/package/speedy-entities@3.1.0) | 🥇 **161.74** | 🥇 **224.97** | 🥇 **85.43** | 🥇 **216.82** |
+|                      [entities](https://github.com/fb55/entities)@9.0.0 |        [21.7 kB](https://bundlephobia.com/package/entities@6.0.1) |        150.36 |        202.38 |        66.02 |        198.83 |
+| [html-&#xFEFF;entities](https://github.com/mdevils/html-entities)@2.6.0 |   [13.3 kB](https://bundlephobia.com/package/html-entities@2.6.0) |         39.64 |         49.36 |        33.76 |        127.65 |
+|                         [he](https://github.com/mathiasbynens/he)@2.0.0 |              [29.9 kB](https://bundlephobia.com/package/he@1.2.0) |         30.52 |         30.92 |        21.78 |        129.98 |
 
 Tests were conducted using [TooFast](https://github.com/smikhalevski/toofast#readme) on Apple M1 with Node.js v26.11.1.
 
