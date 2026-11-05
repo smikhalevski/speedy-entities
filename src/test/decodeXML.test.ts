@@ -15,10 +15,17 @@ describe('decodeXML', () => {
 
   test('ignores unterminated decimal entities', () => {
     expect(decodeXML('&#60')).toBe('&#60');
+    expect(decodeXML('&#60a;')).toBe('&#60a;');
   });
 
   test('ignores unterminated hex entities', () => {
     expect(decodeXML('&#x3c')).toBe('&#x3c');
+    expect(decodeXML('&#x3cg;')).toBe('&#x3cg;');
+  });
+
+  test('ignores numeric entities without digits', () => {
+    expect(decodeXML('&#;')).toBe('&#;');
+    expect(decodeXML('&#x;')).toBe('&#x;');
   });
 
   test('decodes known named entities', () => {
@@ -27,11 +34,15 @@ describe('decodeXML', () => {
 
   test('ignores unknown named entities', () => {
     expect(decodeXML('&NotNestedGreaterGreater;')).toBe('&NotNestedGreaterGreater;');
+    expect(decodeXML('&Lt;')).toBe('&Lt;');
   });
 
   test('ignores unterminated known named entities', () => {
     expect(decodeXML('&lt')).toBe('&lt');
     expect(decodeXML('&ltZZZ')).toBe('&ltZZZ');
+    expect(decodeXML('&amp')).toBe('&amp');
+    expect(decodeXML('&apos')).toBe('&apos');
+    expect(decodeXML('&quot')).toBe('&quot');
   });
 
   test('does not decode the output again', () => {
@@ -42,6 +53,10 @@ describe('decodeXML', () => {
 
   test('decodes multiple entities', () => {
     expect(decodeXML('&lt;&#34;&gt;')).toBe('<">');
+  });
+
+  test('decodes a reference that follows a bare ampersand', () => {
+    expect(decodeXML('&&lt;')).toBe('&<');
   });
 
   test('decodes astral characters', () => {
@@ -55,5 +70,15 @@ describe('decodeXML', () => {
 
   test('decodes out-of-range code points as a replacement character', () => {
     expect(decodeXML('&#x110000;')).toBe('\uFFFD');
+  });
+
+  test('decodes the null char and surrogates as a replacement character', () => {
+    expect(decodeXML('&#0;')).toBe('\uFFFD');
+    expect(decodeXML('&#xD800;')).toBe('\uFFFD');
+  });
+
+  test('decodes code points that overflow 32 bits as a replacement character', () => {
+    // Truncated to 32 bits, 0x100000041 would be 0x41, which is "A"
+    expect(decodeXML('&#x100000041;')).toBe('\uFFFD');
   });
 });
