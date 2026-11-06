@@ -136,8 +136,8 @@ decodeAttribute('&foo;&qux=1');
 
 # Encode
 
-`encodeXML` replaces `"&'<>` with entity references and non-ASCII characters with numeric character references, so the output
-is ASCII-only. A lone surrogate is encoded as `&#xfffd;`.
+`encodeXML` replaces `"&'<>` with entity references and non-ASCII characters with numeric character references, so the
+output is ASCII-only. A lone surrogate is encoded as `&#xfffd;`.
 
 `escapeXML` escapes only `"&'<>` characters.
 
@@ -155,12 +155,12 @@ escapeXML('&😘❤️');
 
 Results are in thousands of operations per second (kHz). The higher number is better.
 
-|                                                                 Library |                                                      Library Size |   Decode HTML |    Decode XML |   Encode XML |    Escape XML |
-| ----------------------------------------------------------------------: | ----------------------------------------------------------------: | ------------: | ------------: | -----------: | ------------: |
-|                                           speedy-&#xFEFF;entities@4.0.0 | [14.9 kB](https://bundlephobia.com/package/speedy-entities@3.1.0) | 🥇 **161.74** | 🥇 **224.97** | 🥇 **85.43** | 🥇 **216.82** |
-|                      [entities](https://github.com/fb55/entities)@9.0.0 |        [21.7 kB](https://bundlephobia.com/package/entities@6.0.1) |        150.36 |        202.38 |        66.02 |        198.83 |
-| [html-&#xFEFF;entities](https://github.com/mdevils/html-entities)@2.6.0 |   [13.3 kB](https://bundlephobia.com/package/html-entities@2.6.0) |         39.64 |         49.36 |        33.76 |        127.65 |
-|                         [he](https://github.com/mathiasbynens/he)@2.0.0 |              [29.9 kB](https://bundlephobia.com/package/he@1.2.0) |         30.52 |         30.92 |        21.78 |        129.98 |
+|                                                                 Library |                                                      Library Size |  Decode HTML |   Decode XML |   Encode XML |    Escape XML |
+| ----------------------------------------------------------------------: | ----------------------------------------------------------------: | -----------: | -----------: | -----------: | ------------: |
+|                                           speedy-&#xFEFF;entities@4.0.0 | [14.9 kB](https://bundlephobia.com/package/speedy-entities@3.1.0) | 🥇 **65.97** | 🥇 **78.64** | 🥇 **84.03** | 🥇 **214.33** |
+|                      [entities](https://github.com/fb55/entities)@9.0.0 |        [21.7 kB](https://bundlephobia.com/package/entities@6.0.1) |        59.64 |        75.79 |        65.38 |        201.60 |
+| [html-&#xFEFF;entities](https://github.com/mdevils/html-entities)@2.6.0 |   [13.3 kB](https://bundlephobia.com/package/html-entities@2.6.0) |        13.66 |        14.95 |        34.63 |        131.00 |
+|                         [he](https://github.com/mathiasbynens/he)@2.0.0 |              [29.9 kB](https://bundlephobia.com/package/he@1.2.0) |        11.13 |        11.30 |        22.70 |        138.11 |
 
 Tests were conducted using [TooFast](https://github.com/smikhalevski/toofast#readme) on Apple M1 with Node.js v26.11.1.
 

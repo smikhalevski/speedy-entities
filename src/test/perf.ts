@@ -6,9 +6,6 @@ import { describe, measure, test } from 'toofast';
 // @ts-ignore
 import * as speedyEntities from '../../lib/index.js';
 
-// Node.js types aren't loaded by tsconfig.json
-declare const process: { env: { GROUP_MEASURE?: '1' | '2' } };
-
 /**
  * If `true`, each group of inputs gets one test per library. Set by GROUP_MEASURE=1.
  */
