@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import * as entities from 'entities';
 import * as he from 'he';
 import * as htmlEntities from 'html-entities';
@@ -56,6 +57,7 @@ const decodeInputs = {
 
   // Measure throughput
   long: {
+    wiki_text: fs.readFileSync(new URL('test.html', import.meta.url), 'utf-8'),
     no_entities: 'The quick brown fox jumps over the lazy dog. '.repeat(REPEAT_COUNT),
     html_text: makeMixedText(htmlTextTokens, MIXED_TEXT_LENGTH),
     escaped_code: makeMixedText(escapedCodeTokens, MIXED_TEXT_LENGTH),
