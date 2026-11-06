@@ -2,20 +2,20 @@
  * Decodes numeric references and the five predefined XML entities. References must end with ";", as XML requires.
  */
 export function decodeXML(input: string): string {
-  let charIndex = input.indexOf('&');
+  let ampersandIndex = input.indexOf('&');
 
-  if (charIndex === -1) {
+  if (ampersandIndex === -1) {
     // Most text has no references
     return input;
   }
 
   let output = '';
-  let textIndex = 0;
+  let textStartIndex = 0;
 
   const inputLength = input.length;
 
-  while (charIndex !== -1 && charIndex < inputLength - 1) {
-    let startIndex = charIndex + 1;
+  while (ampersandIndex !== -1 && ampersandIndex < inputLength - 1) {
+    let startIndex = ampersandIndex + 1;
 
     let value: string | undefined;
     let endIndex = startIndex;
@@ -132,25 +132,31 @@ export function decodeXML(input: string): string {
     }
 
     if (value === undefined) {
-      charIndex = endIndex < inputLength - 1 ? input.indexOf('&', endIndex) : -1;
+      ampersandIndex = endIndex < inputLength - 1 ? input.indexOf('&', endIndex) : -1;
       continue;
     }
 
     // Appending the preceding text and the value separately avoids joining them into a new string first
-    if (textIndex !== charIndex) {
-      output += input.slice(textIndex, charIndex);
+    if (textStartIndex !== ampersandIndex) {
+      output += input.slice(textStartIndex, ampersandIndex);
     }
 
     output += value;
-    textIndex = endIndex;
+    textStartIndex = endIndex;
 
     if (endIndex >= inputLength - 1) {
       break;
     }
 
     // References often follow each other, and checking the next char is cheaper than calling indexOf
-    charIndex = input.charCodeAt(endIndex) === /* & */ 38 ? endIndex : input.indexOf('&', endIndex);
+    ampersandIndex = input.charCodeAt(endIndex) === /* & */ 38 ? endIndex : input.indexOf('&', endIndex);
   }
 
-  return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.slice(textIndex);
+  if (textStartIndex === 0) {
+    return input;
+  }
+  if (textStartIndex === inputLength) {
+    return output;
+  }
+  return output + input.slice(textStartIndex);
 }

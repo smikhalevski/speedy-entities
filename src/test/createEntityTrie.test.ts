@@ -41,17 +41,17 @@ function expectToDecodeEveryName(entities: Record<string, string>) {
 
 describe('createEntityTrie', () => {
   test('keeps the child of any ASCII char in bounds', () => {
-    // A long chain after the last node with several children
-    const { nodeBases, nodeChecks } = createEntityTrie({
+    // A long chain after the last children that have siblings
+    const { nodeBaseOffsets, nodeChecks } = createEntityTrie({
       'a-z': 'aaa',
       aaa: 'bbb',
       ['z'.repeat(300)]: 'ccc',
     }) as DoubleArrayEntityTrie;
 
-    for (let node = 0; node < nodeChecks.length; ++node) {
-      if (node === 0 || nodeChecks[node] !== -1) {
-        expect(nodeBases[node]).toBeGreaterThanOrEqual(0);
-        expect(nodeBases[node] + 127).toBeLessThan(nodeChecks.length);
+    for (let nodeIndex = 0; nodeIndex < nodeChecks.length; ++nodeIndex) {
+      if (nodeIndex === 0 || nodeChecks[nodeIndex] !== -1) {
+        expect(nodeBaseOffsets[nodeIndex]).toBeGreaterThanOrEqual(0);
+        expect(nodeBaseOffsets[nodeIndex] + 127).toBeLessThan(nodeChecks.length);
       }
     }
   });
@@ -66,14 +66,14 @@ describe('createEntityTrie', () => {
       }
     }
 
-    // The last node placed has one child, so it lands below the nodes that long searches placed
+    // The last child placed has no siblings, so it lands below the children that long searches placed
     entities['zza'] = 'zza!';
     entities['zza;'] = 'zza;!';
 
     expectToDecodeEveryName(entities);
   });
 
-  test('places every name when the last node with several children lands below the others', () => {
+  test('places every name when the last children that have siblings land below the others', () => {
     // Nodes of the first level have a few children, which land ever higher above the first level, until the last node
     // fits into a hole near the bottom
     expectToDecodeEveryName(makeTestEntities({ firstCharCount: 36, childCount: 3, childCharCount: 36 }));

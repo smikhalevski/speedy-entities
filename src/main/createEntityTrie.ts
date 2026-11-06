@@ -3,7 +3,7 @@ import { createDoubleArrayEntityTrie, type EntityTrie } from './createDoubleArra
 /**
  * An optional "&", a name of ASCII letters, digits and "-.:_", and an optional ";".
  */
-const entityRegExp = /^&?[a-zA-Z0-9.:_-]+;?$/;
+const entityReferenceRegExp = /^&?[a-zA-Z0-9.:_-]+;?$/;
 
 /**
  * Builds a trie of entity names. Pass it to {@linkcode createEntityTrieDecoder} to create decoders that share it,
@@ -23,8 +23,8 @@ export function createEntityTrie(entities: Record<string, string> | readonly str
 
   const uncheckedEntities = [];
 
-  for (const entity of Object.keys(entities)) {
-    uncheckedEntities.push(entity, (entities as Record<string, string>)[entity]);
+  for (const reference of Object.keys(entities)) {
+    uncheckedEntities.push(reference, (entities as Record<string, string>)[reference]);
   }
 
   return createEntityTrieFromArray(uncheckedEntities);
@@ -32,40 +32,40 @@ export function createEntityTrie(entities: Record<string, string> | readonly str
 
 /**
  * Builds a trie from references and values in turn. Lists are usually sorted and have no "&", so a list is copied only
- * if a name has "&" or names aren't sorted.
+ * if a reference has "&" or references aren't sorted.
  */
 function createEntityTrieFromArray(uncheckedEntities: string[]): EntityTrie {
   let checkedEntities = uncheckedEntities;
 
   let isSorted = true;
-  let previousEntity = '';
+  let previousReference = '';
 
   for (let index = 0; index < uncheckedEntities.length; index += 2) {
-    let entity = uncheckedEntities[index];
+    let reference = uncheckedEntities[index];
 
-    if (typeof entity !== 'string' || !entityRegExp.test(entity)) {
-      throw new Error('Invalid entity reference: ' + JSON.stringify(entity));
+    if (typeof reference !== 'string' || !entityReferenceRegExp.test(reference)) {
+      throw new Error('Invalid entity reference: ' + JSON.stringify(reference));
     }
 
     if (typeof uncheckedEntities[index + 1] !== 'string') {
-      throw new Error('Value of entity reference must be a string: ' + JSON.stringify(entity));
+      throw new Error('Value of entity reference must be a string: ' + JSON.stringify(reference));
     }
 
-    if (entity.charCodeAt(0) === /* & */ 38) {
-      entity = entity.slice(1);
+    if (reference.charCodeAt(0) === /* & */ 38) {
+      reference = reference.slice(1);
 
       if (checkedEntities === uncheckedEntities) {
         checkedEntities = uncheckedEntities.slice(0);
       }
-      checkedEntities[index] = entity;
+      checkedEntities[index] = reference;
     }
 
-    // Stripping "&" can change the order, so entities are compared without it
-    if (entity < previousEntity) {
+    // Stripping "&" can change the order, so references are compared without it
+    if (reference < previousReference) {
       isSorted = false;
     }
 
-    previousEntity = entity;
+    previousReference = reference;
   }
 
   return createDoubleArrayEntityTrie(isSorted ? checkedEntities : sortByEntityReference(checkedEntities));

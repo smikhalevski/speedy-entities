@@ -136,7 +136,7 @@ decodeAttribute('&foo;&qux=1');
 
 # Encode
 
-`encodeXML` replaces `"&'<>` with XML entities and non-ASCII characters with numeric character references, so the output
+`encodeXML` replaces `"&'<>` with entity references and non-ASCII characters with numeric character references, so the output
 is ASCII-only. A lone surrogate is encoded as `&#xfffd;`.
 
 `escapeXML` escapes only `"&'<>` characters.

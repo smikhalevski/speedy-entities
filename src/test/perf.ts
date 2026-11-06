@@ -209,6 +209,6 @@ function makeMixedText(tokens: string[], length: number) {
  * Returns a flat copy of a string. Strings built with `+=` or `repeat` are ropes, and how fast a rope is read depends
  * on when GC flattens it.
  */
-function toSequentialString(str: string): string {
-  return JSON.parse(JSON.stringify(str));
+function toSequentialString(text: string): string {
+  return JSON.parse(JSON.stringify(text));
 }

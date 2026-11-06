@@ -29,7 +29,7 @@ export function encodeXML(input: string): string {
   const inputLength = input.length;
 
   let output = '';
-  let textIndex = 0;
+  let textStartIndex = 0;
   let index = 0;
 
   while (index < inputLength) {
@@ -61,44 +61,50 @@ export function encodeXML(input: string): string {
       continue;
     }
 
-    let entity;
+    let reference;
     let nextIndex = index + 1;
 
     if (charCode >= 0xd800 && charCode <= 0xdfff) {
       const codePoint = input.codePointAt(index)!;
 
       if (codePoint > 0xffff) {
-        entity = getNumericReference(codePoint);
+        reference = getNumericReference(codePoint);
         nextIndex = index + 2;
       } else {
         // A lone surrogate isn't a Unicode scalar value, so HTML parsers, decodeHTML and decodeXML decode a reference
         // to it as U+FFFD anyway
-        entity = '&#xfffd;';
+        reference = '&#xfffd;';
       }
     } else if (charCode >= 0x80) {
-      entity = getNumericReference(charCode);
+      reference = getNumericReference(charCode);
     } else if (charCode === /* " */ 34) {
-      entity = '&quot;';
+      reference = '&quot;';
     } else if (charCode === /* & */ 38) {
-      entity = '&amp;';
+      reference = '&amp;';
     } else if (charCode === /* ' */ 39) {
-      entity = '&apos;';
+      reference = '&apos;';
     } else if (charCode === /* < */ 60) {
-      entity = '&lt;';
+      reference = '&lt;';
     } else {
-      entity = '&gt;';
+      reference = '&gt;';
     }
 
-    if (textIndex !== index) {
-      output += input.slice(textIndex, index);
+    if (textStartIndex !== index) {
+      output += input.slice(textStartIndex, index);
     }
-    output += entity;
+    output += reference;
 
-    textIndex = nextIndex;
+    textStartIndex = nextIndex;
     index = nextIndex;
   }
 
-  return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.slice(textIndex);
+  if (textStartIndex === 0) {
+    return input;
+  }
+  if (textStartIndex === inputLength) {
+    return output;
+  }
+  return output + input.slice(textStartIndex);
 }
 
 function isEncodedCharCode(charCode: number): boolean {
@@ -169,6 +175,6 @@ function formatNumericReference(codePoint: number): string {
 }
 
 // The char code of the hex digit at the given bit offset
-function getHexDigitCharCode(codePoint: number, offset: number): number {
-  return hexDigitCharCodes[(codePoint >> offset) & 15];
+function getHexDigitCharCode(codePoint: number, bitOffset: number): number {
+  return hexDigitCharCodes[(codePoint >> bitOffset) & 15];
 }

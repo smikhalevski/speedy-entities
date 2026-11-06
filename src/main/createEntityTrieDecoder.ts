@@ -45,20 +45,20 @@ export function createEntityTrieDecoder(
     isAttributeValue = false,
   } = options;
 
-  const { nodeBases, nodeChecks, nodeValueIndexes, values } = entityTrie as DoubleArrayEntityTrie;
+  const { nodeBaseOffsets, nodeChecks, nodeValueIndexes, values } = entityTrie as DoubleArrayEntityTrie;
 
   return input => {
     let output = '';
 
-    let textIndex = 0;
+    let textStartIndex = 0;
 
     const inputLength = input.length;
 
     // A reference is "&" followed by at least one char, so it can't start at the last char
-    let charIndex = inputLength > 1 ? input.indexOf('&') : -1;
+    let ampersandIndex = inputLength > 1 ? input.indexOf('&') : -1;
 
-    while (charIndex !== -1 && charIndex < inputLength - 1) {
-      let startIndex = charIndex + 1;
+    while (ampersandIndex !== -1 && ampersandIndex < inputLength - 1) {
+      let startIndex = ampersandIndex + 1;
 
       let value: string | undefined;
       let endIndex = startIndex;
@@ -76,13 +76,13 @@ export function createEntityTrieDecoder(
 
           // parseInt of a hexadecimal number
           while (endIndex < inputLength) {
-            const charCode = input.charCodeAt(endIndex);
+            const digitCharCode = input.charCodeAt(endIndex);
 
             // Convert alpha to lower case
-            const lowerCharCode = charCode | 32;
+            const lowerCharCode = digitCharCode | 32;
 
-            if (charCode >= /* 0 */ 48 && charCode <= /* 9 */ 57) {
-              codePoint = codePoint * 16 + charCode - 48;
+            if (digitCharCode >= /* 0 */ 48 && digitCharCode <= /* 9 */ 57) {
+              codePoint = codePoint * 16 + digitCharCode - 48;
             } else if (lowerCharCode >= /* a */ 97 && lowerCharCode <= /* f */ 102) {
               codePoint = codePoint * 16 + lowerCharCode - 87;
             } else {
@@ -95,10 +95,10 @@ export function createEntityTrieDecoder(
 
           // parseInt of a decimal number
           while (endIndex < inputLength) {
-            const charCode = input.charCodeAt(endIndex);
+            const digitCharCode = input.charCodeAt(endIndex);
 
-            if (charCode >= /* 0 */ 48 && charCode <= /* 9 */ 57) {
-              codePoint = codePoint * 10 + charCode - 48;
+            if (digitCharCode >= /* 0 */ 48 && digitCharCode <= /* 9 */ 57) {
+              codePoint = codePoint * 10 + digitCharCode - 48;
             } else {
               break;
             }
@@ -132,40 +132,40 @@ export function createEntityTrieDecoder(
         // Character entity reference
 
         let index = startIndex;
-        let node = 0;
+        let nodeIndex = 0;
 
-        // The node where the longest entity name read so far ends, or 0. Its value is read once, after the loop, since
-        // reading the value at each node where a name ends makes decoding a few percent slower.
-        let valueNode = 0;
+        // The index of the node where the longest entity name read so far ends, or 0. Its value is read once, after
+        // the loop, since reading the value at each node where a name ends makes decoding a few percent slower.
+        let valueNodeIndex = 0;
 
         while (index < inputLength) {
           const charCode = input.charCodeAt(index);
 
-          // Only ASCII chars have nodes, and bases keep base + charCode in bounds for them
+          // Only ASCII chars have nodes, and base offsets keep baseOffset + charCode in bounds for them
           if (charCode > 127) {
             break;
           }
 
-          const childNode = nodeBases[node] + charCode;
-          const childCheck = nodeChecks[childNode];
+          const childNodeIndex = nodeBaseOffsets[nodeIndex] + charCode;
+          const childCheck = nodeChecks[childNodeIndex];
 
-          if (childCheck >> 1 !== node) {
+          if (childCheck >> 1 !== nodeIndex) {
             // No entity name starts with chars read so far
             break;
           }
 
-          node = childNode;
+          nodeIndex = childNodeIndex;
           ++index;
 
           if ((childCheck & 1) === 1) {
             // An entity name ends at the node
-            valueNode = node;
+            valueNodeIndex = nodeIndex;
             endIndex = index;
           }
         }
 
-        if (valueNode !== 0) {
-          value = values[nodeValueIndexes[valueNode]];
+        if (valueNodeIndex !== 0) {
+          value = values[nodeValueIndexes[valueNodeIndex]];
         }
 
         if (
@@ -174,10 +174,10 @@ export function createEntityTrieDecoder(
           endIndex < inputLength &&
           input.charCodeAt(endIndex - 1) !== /* ; */ 59
         ) {
-          const charCode = input.charCodeAt(endIndex);
+          const nextCharCode = input.charCodeAt(endIndex);
 
           // An unterminated reference followed by "=" or an alphanumeric char is likely a URL query parameter
-          if (charCode === /* = */ 61 || isAlphanumericCharCode(charCode)) {
+          if (nextCharCode === /* = */ 61 || isAlphanumericCharCode(nextCharCode)) {
             value = undefined;
           }
         }
@@ -186,26 +186,32 @@ export function createEntityTrieDecoder(
       if (value !== undefined) {
         // Appending the preceding text and the value separately avoids joining them into a new string first. Once
         // the output is long enough to be a rope, each append only adds a node, even if the encodings differ.
-        if (textIndex !== charIndex) {
-          output += input.slice(textIndex, charIndex);
+        if (textStartIndex !== ampersandIndex) {
+          output += input.slice(textStartIndex, ampersandIndex);
         }
         output += value;
-        textIndex = endIndex;
+        textStartIndex = endIndex;
       }
 
       if (endIndex >= inputLength - 1) {
         break;
       }
 
-      // Entities often follow each other, and checking the next char is cheaper than calling indexOf
+      // References often follow each other, and checking the next char is cheaper than calling indexOf
       if (value === undefined || input.charCodeAt(endIndex) !== /* & */ 38) {
-        charIndex = input.indexOf('&', endIndex);
+        ampersandIndex = input.indexOf('&', endIndex);
       } else {
-        charIndex = endIndex;
+        ampersandIndex = endIndex;
       }
     }
 
-    return textIndex === 0 ? input : textIndex === inputLength ? output : output + input.slice(textIndex);
+    if (textStartIndex === 0) {
+      return input;
+    }
+    if (textStartIndex === inputLength) {
+      return output;
+    }
+    return output + input.slice(textStartIndex);
   };
 }
 
