@@ -42,16 +42,16 @@ function expectToDecodeEveryName(entities: Record<string, string>) {
 describe('createEntityTrie', () => {
   test('keeps the child of any ASCII char in bounds', () => {
     // A long chain after the last children that have siblings
-    const { nodeBaseOffsets, nodeChecks } = createEntityTrie({
+    const { nodes } = createEntityTrie({
       'a-z': 'aaa',
       aaa: 'bbb',
       ['z'.repeat(300)]: 'ccc',
     }) as DoubleArrayEntityTrie;
 
-    for (let nodeIndex = 0; nodeIndex < nodeChecks.length; ++nodeIndex) {
-      if (nodeIndex === 0 || nodeChecks[nodeIndex] !== -1) {
-        expect(nodeBaseOffsets[nodeIndex]).toBeGreaterThanOrEqual(0);
-        expect(nodeBaseOffsets[nodeIndex] + 127).toBeLessThan(nodeChecks.length);
+    for (let nodeIndex = 0; nodeIndex < nodes.length / 2; ++nodeIndex) {
+      if (nodeIndex === 0 || nodes[nodeIndex * 2 + 1] !== -1) {
+        expect(nodes[nodeIndex * 2]).toBeGreaterThanOrEqual(0);
+        expect((nodes[nodeIndex * 2] + 127) * 2 + 1).toBeLessThan(nodes.length);
       }
     }
   });

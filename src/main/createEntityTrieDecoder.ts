@@ -39,23 +39,40 @@ export function createEntityTrieDecoder(
   entityTrie: EntityTrie,
   options: EntityTrieDecoderOptions = {}
 ): (input: string) => string {
-  const {
-    isNumericReferenceSemicolonRequired = false,
-    areC1ControlsRemapped = true,
-    isAttributeValue = false,
-  } = options;
+  const { nodes, nodeValueIndexes, values } = entityTrie as DoubleArrayEntityTrie;
 
-  const { nodeBaseOffsets, nodeChecks, nodeValueIndexes, values } = entityTrie as DoubleArrayEntityTrie;
+  // Options are converted to booleans, so the decoder can test them with a comparison instead of a truthiness check
+  const isNumericReferenceSemicolonRequired = options.isNumericReferenceSemicolonRequired === true;
+  const areC1ControlsRemapped = options.areC1ControlsRemapped !== false;
+  const isAttributeValue = options.isAttributeValue === true;
 
   return input => {
-    let output = '';
-
-    let textStartIndex = 0;
-
     const inputLength = input.length;
 
     // A reference is "&" followed by at least one char, so it can't start at the last char
     let ampersandIndex = inputLength > 1 ? input.indexOf('&') : -1;
+
+    if (ampersandIndex === -1) {
+      // Most text has no references
+      return input;
+    }
+
+    // Decoders created by this function share their optimized code, so V8 doesn't know the values of closure
+    // variables. Copied to locals, they are checked once per call instead of once per reference.
+    const _nodes = nodes;
+    const _nodeValueIndexes = nodeValueIndexes;
+    const _values = values;
+    const _isNumericReferenceSemicolonRequired = isNumericReferenceSemicolonRequired === true;
+    const _areC1ControlsRemapped = areC1ControlsRemapped === true;
+    const _isAttributeValue = isAttributeValue === true;
+
+    // Reading the arrays before the loop lets V8 check their types once, instead of once per reference
+    void _nodes.length;
+    void _nodeValueIndexes.length;
+    void _values.length;
+
+    let output = '';
+    let textStartIndex = 0;
 
     while (ampersandIndex !== -1 && ampersandIndex < inputLength - 1) {
       let startIndex = ampersandIndex + 1;
@@ -63,13 +80,18 @@ export function createEntityTrieDecoder(
       let value: string | undefined;
       let endIndex = startIndex;
 
-      // Both reads below must stay in bounds: reading past the end of the input makes V8 deoptimize this function,
-      // and it stays about twice as slow on short inputs afterwards
-      if (startIndex < inputLength - 1 && input.charCodeAt(startIndex) === /* # */ 35) {
+      // Reads below must stay in bounds: reading past the end of the input makes V8 deoptimize this function, and it
+      // stays about twice as slow on short inputs afterwards
+      let charCode = input.charCodeAt(startIndex);
+
+      if (charCode === /* # */ 35 && startIndex !== inputLength - 1) {
         // Numeric character reference
 
         // All digits are consumed, out-of-range code points (Infinity included) are replaced with U+FFFD below
         let codePoint = 0;
+
+        // The char after the digits, or -1 at the end of the input
+        let terminatorCharCode = -1;
 
         if ((input.charCodeAt(++startIndex) | 32) === /* x */ 120) {
           endIndex = ++startIndex;
@@ -86,6 +108,7 @@ export function createEntityTrieDecoder(
             } else if (lowerCharCode >= /* a */ 97 && lowerCharCode <= /* f */ 102) {
               codePoint = codePoint * 16 + lowerCharCode - 87;
             } else {
+              terminatorCharCode = digitCharCode;
               break;
             }
             ++endIndex;
@@ -100,6 +123,7 @@ export function createEntityTrieDecoder(
             if (digitCharCode >= /* 0 */ 48 && digitCharCode <= /* 9 */ 57) {
               codePoint = codePoint * 10 + digitCharCode - 48;
             } else {
+              terminatorCharCode = digitCharCode;
               break;
             }
             ++endIndex;
@@ -109,15 +133,15 @@ export function createEntityTrieDecoder(
         if (endIndex !== startIndex) {
           // At least one digit must be present
 
-          const isTerminated = endIndex < inputLength && input.charCodeAt(endIndex) === /* ; */ 59;
+          const isTerminated = terminatorCharCode === /* ; */ 59;
 
-          if (isTerminated || !isNumericReferenceSemicolonRequired) {
+          if (isTerminated || !_isNumericReferenceSemicolonRequired) {
             // Convert a code point to a string
 
             if (codePoint === 0 || (codePoint >= 0xd800 && codePoint <= 0xdfff) || codePoint > 0x10ffff) {
               // Null char code, or character reference is outside the permissible Unicode range
               value = '\uFFFD';
-            } else if (areC1ControlsRemapped && codePoint >= 0x80 && codePoint <= 0x9f) {
+            } else if (_areC1ControlsRemapped && codePoint >= 0x80 && codePoint <= 0x9f) {
               value = c1ControlValues[codePoint - 0x80];
             } else {
               value = String.fromCodePoint(codePoint);
@@ -131,23 +155,17 @@ export function createEntityTrieDecoder(
       } else {
         // Character entity reference
 
-        let index = startIndex;
         let nodeIndex = 0;
+        let index = startIndex;
 
         // The index of the node where the longest entity name read so far ends, or 0. Its value is read once, after
         // the loop, since reading the value at each node where a name ends makes decoding a few percent slower.
         let valueNodeIndex = 0;
 
-        while (index < inputLength) {
-          const charCode = input.charCodeAt(index);
-
-          // Only ASCII chars have nodes, and base offsets keep baseOffset + charCode in bounds for them
-          if (charCode > 127) {
-            break;
-          }
-
-          const childNodeIndex = nodeBaseOffsets[nodeIndex] + charCode;
-          const childCheck = nodeChecks[childNodeIndex];
+        // Only ASCII chars have nodes, and base offsets keep baseOffset + charCode in bounds for them
+        while (charCode < 128) {
+          const childNodeIndex = _nodes[nodeIndex << 1] + charCode;
+          const childCheck = _nodes[(childNodeIndex << 1) | 1];
 
           if (childCheck >> 1 !== nodeIndex) {
             // No entity name starts with chars read so far
@@ -160,25 +178,36 @@ export function createEntityTrieDecoder(
           if ((childCheck & 1) === 1) {
             // An entity name ends at the node
             valueNodeIndex = nodeIndex;
-            endIndex = index;
+
+            if (charCode === /* ; */ 59) {
+              // No name continues past ";", so the char after it isn't read
+              break;
+            }
           }
+
+          if (index === inputLength) {
+            break;
+          }
+          charCode = input.charCodeAt(index);
         }
 
         if (valueNodeIndex !== 0) {
-          value = values[nodeValueIndexes[valueNodeIndex]];
-        }
+          value = _values[_nodeValueIndexes[valueNodeIndex]];
+          endIndex = index;
 
-        if (
-          isAttributeValue &&
-          value !== undefined &&
-          endIndex < inputLength &&
-          input.charCodeAt(endIndex - 1) !== /* ; */ 59
-        ) {
-          const nextCharCode = input.charCodeAt(endIndex);
+          // The longest name can end before the last node read, like "not" in "&notit;". Each parent is one char back.
+          // The loop doesn't track where the name ends: with one more variable, V8 can't keep them all in registers.
+          for (let parentNodeIndex = nodeIndex; parentNodeIndex !== valueNodeIndex; --endIndex) {
+            parentNodeIndex = _nodes[(parentNodeIndex << 1) | 1] >> 1;
+          }
 
-          // An unterminated reference followed by "=" or an alphanumeric char is likely a URL query parameter
-          if (nextCharCode === /* = */ 61 || isAlphanumericCharCode(nextCharCode)) {
-            value = undefined;
+          if (_isAttributeValue && endIndex !== inputLength && input.charCodeAt(endIndex - 1) !== /* ; */ 59) {
+            const nextCharCode = input.charCodeAt(endIndex);
+
+            // An unterminated reference followed by "=" or an alphanumeric char is likely a URL query parameter
+            if (nextCharCode === /* = */ 61 || isAlphanumericCharCode(nextCharCode)) {
+              value = undefined;
+            }
           }
         }
       }

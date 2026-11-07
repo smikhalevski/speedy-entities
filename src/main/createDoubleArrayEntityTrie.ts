@@ -22,15 +22,13 @@ export interface EntityTrie {
  */
 export interface DoubleArrayEntityTrie extends EntityTrie {
   /**
-   * The child of a node for a char is at `nodeBaseOffsets[nodeIndex] + charCode`.
+   * Two numbers for each node, next to each other, so a lookup reads one array:
+   *
+   * - `nodes[nodeIndex * 2]` is the base offset: the child of a node for a char is at `baseOffset + charCode`.
+   * - `nodes[nodeIndex * 2 + 1]` is the check: `check >> 1` is the index of the parent node, and the low bit is set if
+   *   an entity name ends at the node. -1 marks an unused index.
    */
-  nodeBaseOffsets: Int32Array;
-
-  /**
-   * `nodeChecks[nodeIndex] >> 1` is the index of the parent node, and the low bit is set if an entity name ends at the
-   * node. -1 marks an unused index.
-   */
-  nodeChecks: Int32Array;
+  nodes: Int32Array;
 
   /**
    * The index in `values` of the value of the entity name that ends at a node. Most nodes have no value, so values
@@ -62,8 +60,12 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
 
   // Each char adds at most one node, and arrays grow if nodes don't pack tightly
   let size = charCount + 512;
-  let nodeBaseOffsets = new Int32Array(size);
-  let nodeChecks = new Int32Array(size).fill(-1);
+
+  // Unused nodes are -1, and a node gets base offset 0 when it's placed, see DoubleArrayEntityTrie.nodes
+  let nodes = new Int32Array(size * 2).fill(-1);
+
+  // The root has no children until they are placed
+  nodes[0] = 0;
 
   // The index in values of the value of the entity name that ends at a node
   let valueIndexes = new Int32Array(size);
@@ -123,16 +125,16 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
       for (let charIndex = depth; charIndex < name.length; ++charIndex) {
         if (firstUnusedIndex + 128 > size) {
           size <<= 1;
-          nodeBaseOffsets = growInt32Array(nodeBaseOffsets, size, 0);
-          nodeChecks = growInt32Array(nodeChecks, size, -1);
+          nodes = growInt32Array(nodes, size * 2, -1);
           valueIndexes = growInt32Array(valueIndexes, size, 0);
         }
 
-        nodeBaseOffsets[parentNodeIndex] = firstUnusedIndex - name.charCodeAt(charIndex);
-        nodeChecks[firstUnusedIndex] = (parentNodeIndex << 1) | (charIndex === name.length - 1 ? 1 : 0);
+        nodes[parentNodeIndex << 1] = firstUnusedIndex - name.charCodeAt(charIndex);
+        nodes[firstUnusedIndex << 1] = 0;
+        nodes[(firstUnusedIndex << 1) | 1] = (parentNodeIndex << 1) | (charIndex === name.length - 1 ? 1 : 0);
         parentNodeIndex = firstUnusedIndex;
 
-        while (firstUnusedIndex < size && nodeChecks[firstUnusedIndex] !== -1) {
+        while (firstUnusedIndex < size && nodes[(firstUnusedIndex << 1) | 1] !== -1) {
           ++firstUnusedIndex;
         }
       }
@@ -171,8 +173,7 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
     while (true) {
       if (baseOffset + 128 > size) {
         size <<= 1;
-        nodeBaseOffsets = growInt32Array(nodeBaseOffsets, size, 0);
-        nodeChecks = growInt32Array(nodeChecks, size, -1);
+        nodes = growInt32Array(nodes, size * 2, -1);
         valueIndexes = growInt32Array(valueIndexes, size, 0);
       }
       if (!hasSiblings) {
@@ -182,7 +183,7 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
       let isUnused = true;
 
       for (let childIndex = 0; childIndex < childCount; ++childIndex) {
-        if (nodeChecks[baseOffset + childCharCodes[childIndex]] !== -1) {
+        if (nodes[((baseOffset + childCharCodes[childIndex]) << 1) | 1] !== -1) {
           isUnused = false;
           break;
         }
@@ -199,13 +200,14 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
       searchStartIndex = baseOffset + childCharCodes[0];
     }
 
-    nodeBaseOffsets[nodeIndex] = baseOffset;
+    nodes[nodeIndex << 1] = baseOffset;
 
     for (let childIndex = 0; childIndex < childCount; ++childIndex) {
       const childNodeIndex = baseOffset + childCharCodes[childIndex];
 
       // An entity name ends at a child if the first name that goes through it ends there
-      nodeChecks[childNodeIndex] =
+      nodes[childNodeIndex << 1] = 0;
+      nodes[(childNodeIndex << 1) | 1] =
         (nodeIndex << 1) | (entities[childNameStartIndexes[childIndex]].length === depth + 1 ? 1 : 0);
 
       if (hasSiblings && childNodeIndex > maxIndex) {
@@ -213,7 +215,7 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
       }
     }
 
-    while (firstUnusedIndex < size && nodeChecks[firstUnusedIndex] !== -1) {
+    while (firstUnusedIndex < size && nodes[(firstUnusedIndex << 1) | 1] !== -1) {
       ++firstUnusedIndex;
     }
 
@@ -240,8 +242,7 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
   nodeValueIndexes.set(valueIndexes.subarray(0, finalSize));
 
   return {
-    nodeBaseOffsets: nodeBaseOffsets.slice(0, finalSize),
-    nodeChecks: nodeChecks.slice(0, finalSize),
+    nodes: nodes.slice(0, finalSize * 2),
     nodeValueIndexes,
     values,
   } as DoubleArrayEntityTrie;
