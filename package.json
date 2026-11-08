@@ -1,6 +1,6 @@
 {
   "name": "speedy-entities",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "The fastest XML/HTML entities decoder.",
   "type": "module",
   "main": "./index.js",
