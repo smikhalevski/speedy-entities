@@ -74,9 +74,17 @@ describe('createEntityTrie', () => {
   });
 
   test('places every name when the last children that have siblings land below the others', () => {
-    // Nodes of the first level have a few children, which land ever higher above the first level, until the last node
-    // fits into a hole near the bottom
-    expectToDecodeEveryName(makeTestEntities({ firstCharCount: 36, childCount: 3, childCharCount: 36 }));
+    // Nodes of the first level have a few children, which land ever higher above the first level, until the children of
+    // the last node fit into holes near the bottom, so the arrays must be sized by the highest child, not the last one
+    expectToDecodeEveryName(makeTestEntities({ firstCharCount: 49, childCount: 4, childCharCount: 36 }));
+  });
+
+  test("doesn't treat the root as a child of itself", () => {
+    // The children of the root are at their char codes, so a NUL char after "&" lands on the root, whose check is -1
+    const decode = createEntityTrieDecoder(createEntityTrie({ 'lt;': '<', amp: '&' }));
+
+    expect(decode('&\u0000lt;')).toBe('&\u0000lt;');
+    expect(decode('&\u0000amp')).toBe('&\u0000amp');
   });
 
   test('places every name when the arrays have to grow', () => {

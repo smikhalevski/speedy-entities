@@ -157,7 +157,7 @@ Results are in thousands of operations per second (kHz). The higher number is be
 
 |                                                                 Library |                                                      Library Size |  Decode HTML |   Decode XML |   Encode XML |    Escape XML |
 | ----------------------------------------------------------------------: | ----------------------------------------------------------------: | -----------: | -----------: | -----------: | ------------: |
-|                                           speedy-&#xFEFF;entities@4.0.0 | [14.9 kB](https://bundlephobia.com/package/speedy-entities@3.1.0) | 🥇 **70.60** | 🥇 **83.80** | 🥇 **83.71** | 🥇 **223.13** |
+|                                           speedy-&#xFEFF;entities@4.0.0 | [14.9 kB](https://bundlephobia.com/package/speedy-entities@3.1.0) | 🥇 **82.93** | 🥇 **83.80** | 🥇 **83.71** | 🥇 **223.13** |
 |                      [entities](https://github.com/fb55/entities)@9.0.0 |        [21.7 kB](https://bundlephobia.com/package/entities@6.0.1) |        62.03 |        79.28 |        69.37 |        209.09 |
 | [html-&#xFEFF;entities](https://github.com/mdevils/html-entities)@2.6.0 |   [13.3 kB](https://bundlephobia.com/package/html-entities@2.6.0) |        14.21 |        15.26 |        34.89 |        134.05 |
 |                         [he](https://github.com/mathiasbynens/he)@2.0.0 |              [29.9 kB](https://bundlephobia.com/package/he@1.2.0) |        11.32 |        11.41 |        23.03 |        139.39 |

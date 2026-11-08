@@ -24,20 +24,22 @@ export interface DoubleArrayEntityTrie extends EntityTrie {
   /**
    * Two numbers for each node, next to each other, so a lookup reads one array:
    *
-   * - `nodes[nodeIndex * 2]` is the base offset: the child of a node for a char is at `baseOffset + charCode`.
+   * - `nodes[nodeIndex * 2]` is the base offset: the child of a node for a char is at `baseOffset + charCode`. The base
+   *   offset of the root is 0, so its child for a char is at the char code.
    * - `nodes[nodeIndex * 2 + 1]` is the check: `check >> 1` is the index of the parent node, and the low bit is set if
    *   an entity name ends at the node. -1 marks an unused index.
    */
   nodes: Int32Array;
 
   /**
-   * The index in `values` of the value of the entity name that ends at a node. Most nodes have no value, so values
-   * aren't stored per node.
+   * The index in `values` of the value of the longest entity name that ends at a node or at one of its ancestors, or 0
+   * if there's no such name. A walk that stops at any node finds the longest match with one lookup, instead of
+   * tracking the nodes where names end. Most nodes have no value of their own, so values aren't stored per node.
    */
   nodeValueIndexes: Uint16Array | Int32Array;
 
   /**
-   * The values of entity names, see `nodeValueIndexes`.
+   * The values of entity names, see `nodeValueIndexes`. The value at index 0 is unused.
    */
   values: string[];
 }
@@ -64,16 +66,18 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
   // Unused nodes are -1, and a node gets base offset 0 when it's placed, see DoubleArrayEntityTrie.nodes
   let nodes = new Int32Array(size * 2).fill(-1);
 
-  // The root has no children until they are placed
+  // The root has no children until they are placed. Its check stays -1: the children of the root are at their char
+  // codes, so a NUL char after "&" lands on the root, and the check tells the decoder that it's not a child.
   nodes[0] = 0;
 
-  // The index in values of the value of the entity name that ends at a node
+  // The index in values of the value of the longest entity name that ends at a node or at one of its ancestors
   let valueIndexes = new Int32Array(size);
 
-  const values: string[] = [];
+  // Index 0 means that no name ends at a node or at its ancestors
+  const values = [''];
 
-  // Indexes below 128 stay unused, so a base offset is never negative and baseOffset + charCode is in bounds for any
-  // ASCII char
+  // Indexes below 128 are used only by the children of the root, which has base offset 0. The base offset of any other
+  // node is never negative, and baseOffset + charCode is in bounds for any ASCII char.
   let firstUnusedIndex = 128;
 
   // The largest index of a child that has siblings, children without siblings are placed before firstUnusedIndex
@@ -102,15 +106,20 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
 
     let nameStartIndex = stack[stackLength + 1];
 
+    // Parents are visited before their children, so a node gets the value of its parent if no name ends at it
+    let valueIndex = nodeIndex === 0 ? 0 : valueIndexes[nodes[(nodeIndex << 1) | 1] >> 1];
+
     if (nameStartIndex !== nameEndIndex && entities[nameStartIndex].length === depth) {
       // A name ends at the node, it sorts before longer names, and copies of it follow it
       do {
         nameStartIndex += 2;
       } while (nameStartIndex !== nameEndIndex && entities[nameStartIndex].length === depth);
 
-      valueIndexes[nodeIndex] = values.length;
+      valueIndex = values.length;
       values.push(entities[nameStartIndex - 1]);
     }
+
+    valueIndexes[nodeIndex] = valueIndex;
 
     if (nameStartIndex === nameEndIndex) {
       continue;
@@ -129,10 +138,14 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
           valueIndexes = growInt32Array(valueIndexes, size, 0);
         }
 
-        nodes[parentNodeIndex << 1] = firstUnusedIndex - name.charCodeAt(charIndex);
-        nodes[firstUnusedIndex << 1] = 0;
-        nodes[(firstUnusedIndex << 1) | 1] = (parentNodeIndex << 1) | (charIndex === name.length - 1 ? 1 : 0);
-        parentNodeIndex = firstUnusedIndex;
+        // The child of the root is at the char code, see DoubleArrayEntityTrie.nodes
+        const childNodeIndex = parentNodeIndex === 0 ? name.charCodeAt(charIndex) : firstUnusedIndex;
+
+        nodes[parentNodeIndex << 1] = childNodeIndex - name.charCodeAt(charIndex);
+        nodes[childNodeIndex << 1] = 0;
+        nodes[(childNodeIndex << 1) | 1] = (parentNodeIndex << 1) | (charIndex === name.length - 1 ? 1 : 0);
+        valueIndexes[childNodeIndex] = valueIndex;
+        parentNodeIndex = childNodeIndex;
 
         while (firstUnusedIndex < size && nodes[(firstUnusedIndex << 1) | 1] !== -1) {
           ++firstUnusedIndex;
@@ -163,9 +176,12 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
     const hasSiblings = childCount !== 1;
 
     // Children are sorted by char, so the first child lands on the first unused index, or on searchStartIndex if it has
-    // siblings that can't be placed before it
+    // siblings that can't be placed before it. Children of the root are at their char codes, which are unused.
     const startBaseOffset =
-      (hasSiblings && searchStartIndex > firstUnusedIndex ? searchStartIndex : firstUnusedIndex) - childCharCodes[0];
+      nodeIndex === 0
+        ? 0
+        : (hasSiblings && searchStartIndex > firstUnusedIndex ? searchStartIndex : firstUnusedIndex) -
+          childCharCodes[0];
 
     let baseOffset = startBaseOffset;
 
@@ -176,7 +192,7 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
         nodes = growInt32Array(nodes, size * 2, -1);
         valueIndexes = growInt32Array(valueIndexes, size, 0);
       }
-      if (!hasSiblings) {
+      if (!hasSiblings || nodeIndex === 0) {
         break;
       }
 
@@ -246,6 +262,27 @@ export function createDoubleArrayEntityTrie(entities: readonly string[]): Double
     nodeValueIndexes,
     values,
   } as DoubleArrayEntityTrie;
+}
+
+/**
+ * Returns the value of an entity name, like "amp;", or `undefined` if the trie doesn't have the name. Names must be
+ * ASCII, see {@linkcode DoubleArrayEntityTrie.nodes}.
+ */
+export function getEntityValue(entityTrie: EntityTrie, name: string): string | undefined {
+  const { nodes, nodeValueIndexes, values } = entityTrie as DoubleArrayEntityTrie;
+
+  let nodeIndex = 0;
+
+  for (let index = 0; index < name.length; ++index) {
+    const childNodeIndex = nodes[nodeIndex << 1] + name.charCodeAt(index);
+
+    if (nodes[(childNodeIndex << 1) | 1] >> 1 !== nodeIndex) {
+      return undefined;
+    }
+    nodeIndex = childNodeIndex;
+  }
+
+  return nodeIndex !== 0 && (nodes[(nodeIndex << 1) | 1] & 1) === 1 ? values[nodeValueIndexes[nodeIndex]] : undefined;
 }
 
 function growInt32Array(array: Int32Array, size: number, fillValue: number) {

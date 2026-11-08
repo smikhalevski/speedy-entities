@@ -34,6 +34,13 @@ describe('decodeHTML', () => {
     expect(decodeHTML('&#x80')).toBe('\u20AC');
   });
 
+  test('decodes numeric references at the ends of the Unicode range', () => {
+    expect(decodeHTML('&#1114111;&#x10FFFF;')).toBe('\u{10FFFF}\u{10FFFF}');
+    expect(decodeHTML('&#1114112;&#x110000;')).toBe('\uFFFD\uFFFD');
+    expect(decodeHTML('&#99999999999999999999;&#xFFFFFFFFFFFFFFFFFFFF;')).toBe('\uFFFD\uFFFD');
+    expect(decodeHTML('&#00000000000000000000065;&#x00000000000000000000041;')).toBe('AA');
+  });
+
   test('decodes numeric references that are not C1 controls', () => {
     expect(decodeHTML('&#160;')).toBe('\u00A0');
   });
